@@ -29,13 +29,23 @@ if __name__ == "__main__":
 
     logging.basicConfig(format="%(asctime)s %(message)s", datefmt="[%Y-%m-%d %H:%M:%S]", level=logging.INFO)
 
-    if not os.path.exists(os.path.join("detection", "log")):
-        os.makedirs(os.path.join("detection", "log"))
+    if cliargs.image is None:
+        raise Exception("For specify the path to the image, pleace use arg: --image PATH")
 
     logging.info("Detection runing...")
     gc = FakeGuiConnector()
     img = cv2.imread(cliargs.image)
-    cv2.imwrite(os.path.join("detection", "log", "in_image.png"), img)
+    try:
+        if img.shape[0]+img.shape[1] == 0:
+            raise AttributeError
+    except AttributeError:
+        raise Exception("Image broken or invalid path.")
+
+    if not os.path.exists(os.path.join("log")):
+        os.makedirs(os.path.join("log"))
+    if not os.path.exists(os.path.join("log", "main")):
+        os.makedirs(os.path.join("log", "main"))
+    cv2.imwrite(os.path.join("log", "main", "in_image.png"), img)
 
     result = detect_elements(gc, img, trh_corr_mult=cliargs.trh_corr_mult)
 
@@ -50,9 +60,9 @@ if __name__ == "__main__":
 
     if cliargs.save_json_result:
         logging.info("-" * 40)
-        dump_elements(os.path.join("detection", "log", "board.json"), result)
-        logging.info(f"""Detected elements saved to {os.path.join("detection", "log", "board.json")}""")
+        dump_elements(os.path.join("log", "main", "board.json"), result)
+        logging.info(f"""Detected elements saved to {os.path.join("log", "main", "board.json")}""")
     if cliargs.draw_elements:
         logging.info("-" * 40)
-        save_detect_img(img, result, os.path.join("detection", "log", "out_image.png"))
-        logging.info(f"""Image with elements saved to {os.path.join("detection", "log", "out_image.png")}""")
+        save_detect_img(img, result, os.path.join("log", "main", "out_image.png"))
+        logging.info(f"""Image with elements saved to {os.path.join("log", "main", "out_image.png")}""")

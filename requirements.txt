@@ -1,1 +1,7 @@
 # put your requirements here
+numpy==1.18.1
+opencv-python==3.3.0.10
+scikit-image==0.16.2
+scikit-learn==0.20.1
+scipy==1.5.4
+-e hg+https://hg.ximc.ru/eyepoint/epcore@f4b7101b629c336799cb4109c2dddde0181d7f6a#egg=epcore

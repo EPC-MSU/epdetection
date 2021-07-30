@@ -14,9 +14,9 @@ from epcore.elements.board import Board
 from detection.utils import save_detect_img
 
 """
-Run in top folder (with venv):
+Run under virtual enviroment in top folder (epdetection):
 
-python -m unittest discover detection
+python -m unittest discover
 """
 DRAW_IMAGES = True
 
@@ -47,13 +47,20 @@ def compare_elements(trueres, result, thd_in_pixels=12):
 
 
 def load_test_data(test_folder_name):
-    img = cv2.imread(os.path.join("detection", "tests", test_folder_name, "image.png"))
+    img = cv2.imread(os.path.join("tests", test_folder_name, "image.png"))
 
-    with open(os.path.join("detection", "tests", test_folder_name, "board.json"), "r") as f:
+    with open(os.path.join("tests", test_folder_name, "board.json"), "r") as f:
         board_json = json.load(f, encoding="utf8")
     board = Board.create_from_json(board_json)
     if DRAW_IMAGES:
-        save_detect_img(img.copy(), board.elements, os.path.join("detection", "tests", test_folder_name, "correct.png"))
+        if not os.path.exists(os.path.join("log")):
+            os.makedirs(os.path.join("log"))
+        if not os.path.exists(os.path.join("log", "tests")):
+            os.makedirs(os.path.join("log", "tests"))
+        if not os.path.exists(os.path.join("log", "tests", test_folder_name)):
+            os.makedirs(os.path.join("log", "tests", test_folder_name))
+        cv2.imwrite(os.path.join("log", "tests", test_folder_name, "image.png"), img)
+        save_detect_img(img.copy(), board.elements, os.path.join("log", "tests", test_folder_name, "correct.png"))
     return img, board.elements
 
 
@@ -64,7 +71,7 @@ class DetectTests(unittest.TestCase):
         img, trueres = load_test_data(folder_name)
         result = detect_elements(FakeGuiConnector(), img)
         if DRAW_IMAGES:
-            save_detect_img(img.copy(), result, os.path.join("detection", "tests", folder_name, "detected.png"))
+            save_detect_img(img.copy(), result, os.path.join("log", "tests", folder_name, "detected.png"))
         tp, fp, total = compare_elements(result, trueres)
         score = tp / (total + fp)
         logger.info(f"TEST[1] Clf quality = {score:.2f} [Small board | {folder_name}]")
@@ -74,7 +81,7 @@ class DetectTests(unittest.TestCase):
         img, trueres = load_test_data(folder_name)
         result = detect_elements(FakeGuiConnector(), img)
         if DRAW_IMAGES:
-            save_detect_img(img.copy(), result, os.path.join("detection", "tests", folder_name, "detected.png"))
+            save_detect_img(img.copy(), result, os.path.join("log", "tests", folder_name, "detected.png"))
         tp, fp, total = compare_elements(result, trueres)
         score = tp / (total + fp)
         logger.info(f"TEST[2] Clf quality = {score:.2f} [Sparse board | {folder_name}]")
@@ -84,7 +91,7 @@ class DetectTests(unittest.TestCase):
         img, trueres = load_test_data(folder_name)
         result = detect_elements(FakeGuiConnector(), img)
         if DRAW_IMAGES:
-            save_detect_img(img.copy(), result, os.path.join("detection", "tests", folder_name, "detected.png"))
+            save_detect_img(img.copy(), result, os.path.join("log", "tests", folder_name, "detected.png"))
         tp, fp, total = compare_elements(result, trueres)
         score = tp / (total + fp)
         logger.info(f"TEST[3] Clf quality = {score:.2f} [Blue board | {folder_name}]")
@@ -94,7 +101,7 @@ class DetectTests(unittest.TestCase):
         img, trueres = load_test_data(folder_name)
         result = detect_BGA(FakeGuiConnector(), img)
         if DRAW_IMAGES:
-            save_detect_img(img.copy(), result, os.path.join("detection", "tests", folder_name, "detected.png"))
+            save_detect_img(img.copy(), result, os.path.join("log", "tests", folder_name, "detected.png"))
         tp, fp, total = compare_elements(result, trueres, thd_in_pixels=10)
         score = tp / (total + fp)
         logger.info(f"TEST[4] Clf quality = {score:.2f} [BGA Detection | {folder_name}]")
@@ -104,7 +111,7 @@ class DetectTests(unittest.TestCase):
         img, trueres = load_test_data(folder_name)
         result = detect_label(FakeGuiConnector(), img)
         if DRAW_IMAGES:
-            save_detect_img(img.copy(), result, os.path.join("detection", "tests", folder_name, "detected.png"))
+            save_detect_img(img.copy(), result, os.path.join("log", "tests", folder_name, "detected.png"))
         tp, fp, total = compare_elements(result, trueres)
         score = tp / (total + fp)
         logger.info(f"TEST[5] Clf quality = {score:.2f} [Calibration chessboard | {folder_name}]")

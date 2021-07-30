@@ -2,8 +2,8 @@ import os
 import json
 import logging
 import warnings
-import numpy as np
 
+import numpy as np
 import cv2
 from cv2 import matchTemplate, TM_CCOEFF_NORMED
 from scipy.signal import correlate2d
