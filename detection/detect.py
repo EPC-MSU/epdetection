@@ -32,15 +32,16 @@ FICT_PINS_N_MAX = 5
 PIN_IN_PATTERN = 0.35
 
 clf_paths = {
-    "PCB": {"dump": os.path.join("detection", "dumps", "clf_types.dump"),
-                 "csv": os.path.join("detection", "dumps", "types.csv")},
-    "BGA": {"dump": os.path.join("detection", "dumps", "clf_bga.dump"),
-            "csv": os.path.join("detection", "dumps", "bga.csv")},
-    "label": {"dump": os.path.join("detection", "dumps", "clf_label.dump"),
-              "csv:": os.path.join("detection", "dumps", "label.csv")}}
+    "PCB": {"dump": os.path.join(os.path.dirname(__file__), "dumps", "clf_types.dump"),
+            "csv": os.path.join(os.path.dirname(__file__), "dumps", "types.csv")},
+    "BGA": {"dump": os.path.join(os.path.dirname(__file__), "dumps", "clf_bga.dump"),
+            "csv": os.path.join(os.path.dirname(__file__), "dumps", "bga.csv")},
+    "label": {"dump": os.path.join(os.path.dirname(__file__), "dumps", "clf_label.dump"),
+              "csv:": os.path.join(os.path.dirname(__file__), "dumps", "label.csv")}}
 
 
 def get_element_names_by_mode(mode: str):
+    print(os.getcwd())
     types_filename = clf_paths[mode]["csv"]
     element_names = []
     with open(types_filename) as types_file:
@@ -48,7 +49,6 @@ def get_element_names_by_mode(mode: str):
             str_line = line.split(",")[0]
             if str_line != "not elem\n" and str_line != "name":
                 element_names.append(str_line.strip())
-
     return element_names
 
 

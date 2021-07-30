@@ -109,7 +109,7 @@ def fitSizes(elem, h_pins=-1, w_pins=-1):
     if elem.rotation % 2 == 0:
         elem.width, elem.height = elem.height, elem.width
 
-    with open(os.path.join("detection", "dumps", "sizes.csv")) as file:
+    with open(os.path.join(os.path.join(os.path.dirname(__file__), "dumps", "sizes.csv"))) as file:
         for line in file.readlines():
             if line.split(",")[0].strip() == reprName(elem, h_pins, w_pins):
                 elem.width = float(line.split(",")[1].strip()) * PIX_PER_MM

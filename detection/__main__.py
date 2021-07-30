@@ -28,7 +28,6 @@ if __name__ == "__main__":
     cliargs = parser.parse_args()
 
     logging.basicConfig(format="%(asctime)s %(message)s", datefmt="[%Y-%m-%d %H:%M:%S]", level=logging.INFO)
-
     if cliargs.image is None:
         raise Exception("For specify the path to the image, pleace use arg: --image PATH")
 
