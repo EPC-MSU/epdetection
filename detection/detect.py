@@ -1,9 +1,5 @@
 """
-detect.py - main file to detection-api
-See full readme near this file.
-
-Use detect_all() func for detect elements in you image.
-Use detect_BGA_params for find BGA rotation.
+detect.py - main file to detection functions.
 See more in doc/readme.md
 """
 __author__ = "medvdanil@gmail.com (Daniil Medvedev)"
@@ -41,6 +37,18 @@ clf_paths = {
 
 
 def get_element_names_by_mode(mode: str):
+    """
+    Return list of string names of elements by string mode.
+
+    Parameters
+    ----------
+    mode : str
+        'PCB', 'BGA' or 'label'
+    Returns
+    -------
+    names : list
+        Names of available elements for specific mode
+    """
     print(os.getcwd())
     types_filename = clf_paths[mode]["csv"]
     element_names = []

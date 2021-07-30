@@ -7,9 +7,10 @@ python -m detection --image detection//tests//elm_test1/image.png --draw-element
 import logging
 import argparse
 import os
+import json
 
 import cv2
-
+from epcore.elements.board import Board
 from .detect import detect_elements
 from .utils import FakeGuiConnector, dump_elements, save_detect_img
 
@@ -59,7 +60,9 @@ if __name__ == "__main__":
 
     if cliargs.save_json_result:
         logging.info("-" * 40)
-        dump_elements(os.path.join("log", "main", "board.json"), result)
+        board_json = Board(result).to_json()
+        with open(os.path.join("log", "main", "board.json"), "w") as dump_file:
+            json.dump(board_json, dump_file, separators=(",", ":"), indent=2)
         logging.info(f"""Detected elements saved to {os.path.join("log", "main", "board.json")}""")
     if cliargs.draw_elements:
         logging.info("-" * 40)
