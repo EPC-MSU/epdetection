@@ -16,7 +16,7 @@ from detection.utils import save_detect_img
 """
 Run under virtual enviroment in top folder (epdetection):
 
-python -m unittest discover
+python -m unittest discover tests
 """
 DRAW_IMAGES = True
 

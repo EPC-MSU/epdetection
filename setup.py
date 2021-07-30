@@ -3,16 +3,16 @@ from setuptools import setup
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setup(name='MyHelloWorldProject',
-      version='0.0.0',
-      description='YOUR DESCRIPTION',
+setup(name='epdetection',
+      version='1.0.0',
+      description='PCB components detection module for EyePoint P10.',
       long_description=long_description,
       long_description_content_type="text/markdown",
-      url='https://github.com/EPC-MSU/URL_TO_YOUR_PROJECT',
+      url='https://github.com/EPC-MSU/epdetection',
       author='EPC MSU',
-      author_email='YOUR_EMAIL@physlab.ru',
+      author_email='a.p.marakulin@gmail.com',
       license='CC0-1.0',
-      packages=['hello_world'],
+      packages=['detection'],
       install_requires=[
             '',  # YOUR DEPENDENCIES ARE HERE
       ],
