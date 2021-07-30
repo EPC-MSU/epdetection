@@ -32,12 +32,24 @@ FICT_PINS_N_MAX = 5
 PIN_IN_PATTERN = 0.35
 
 clf_paths = {
-    "elements": {"dump": os.path.join("detection", "dumps", "clf_types.dump"),
+    "PCB": {"dump": os.path.join("detection", "dumps", "clf_types.dump"),
                  "csv": os.path.join("detection", "dumps", "types.csv")},
     "BGA": {"dump": os.path.join("detection", "dumps", "clf_bga.dump"),
             "csv": os.path.join("detection", "dumps", "bga.csv")},
     "label": {"dump": os.path.join("detection", "dumps", "clf_label.dump"),
               "csv:": os.path.join("detection", "dumps", "label.csv")}}
+
+
+def get_element_names_by_mode(mode: str):
+    types_filename = clf_paths[mode]["csv"]
+    element_names = []
+    with open(types_filename) as types_file:
+        for line in types_file.readlines():
+            str_line = line.split(",")[0]
+            if str_line != "not elem\n" and str_line != "name":
+                element_names.append(str_line.strip())
+
+    return element_names
 
 
 def detect_elements(gc, img, trh_prob=0.7, trh_corr_mult=1.5,
@@ -73,7 +85,7 @@ def detect_elements(gc, img, trh_prob=0.7, trh_corr_mult=1.5,
     elements : list
         List of detected Elements
     """
-    clf_path = clf_paths["elements"]
+    clf_path = clf_paths["PCB"]
     elements = _detect_all(gc, img, clf_path, trh_prob, trh_corr_mult,
                            find_one, elements_offset, debug_dir, det_names, bga_szk)
     return elements
