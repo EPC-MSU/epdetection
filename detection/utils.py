@@ -344,6 +344,7 @@ def yield_patches(img, matches, det):
             det.resized_shape[1::-1]
         )
 
+
 def _all_mode_rect(m, matches, offset, trh):
     res = []
     for v in matches:
@@ -351,6 +352,7 @@ def _all_mode_rect(m, matches, offset, trh):
            v[1] - v[3] - offset[1]: v[1] + v[3] - offset[1]].max() - v[-1] <= trh:
             res.append(v)
     return res
+
 
 def _mean_mode_rect(m, matches, offset, trh):
     res = []
@@ -369,8 +371,7 @@ def _mean_mode_rect(m, matches, offset, trh):
         j = i + 1
         while j < len(max_matches):
             if abs(v[0] - max_matches[j][0]) < tail[0] and \
-                abs(v[1] - max_matches[j][1]) < tail[3] and \
-                max_matches[j][4] == v[4]:
+                    abs(v[1] - max_matches[j][1]) < tail[3] and max_matches[j][4] == v[4]:
                 r += max_matches[j][0]
                 c += max_matches[j][1]
                 n += 1
@@ -384,6 +385,7 @@ def _mean_mode_rect(m, matches, offset, trh):
         res.append((r, c) + tuple(tail))
         i += 1
     return res
+
 
 def max_rect(matches, trh=0.0, mode="all"):
     if mode != "all" and mode != "mean":
