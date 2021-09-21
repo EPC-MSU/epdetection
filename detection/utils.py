@@ -344,6 +344,46 @@ def yield_patches(img, matches, det):
             det.resized_shape[1::-1]
         )
 
+def _all_mode_rect(m, matches, offset, trh):
+    res = []
+    for v in matches:
+        if m[v[0] - v[2] - offset[0]: v[0] + v[2] - offset[0],
+           v[1] - v[3] - offset[1]: v[1] + v[3] - offset[1]].max() - v[-1] <= trh:
+            res.append(v)
+    return res
+
+def _mean_mode_rect(m, matches, offset, trh):
+    res = []
+    max_matches = []
+    for v in matches:
+        if m[v[0] - v[2] - offset[0]: v[0] + v[2] - offset[0],
+           v[1] - v[3] - offset[1]: v[1] + v[3] - offset[1]].max() - v[-1] <= trh:
+            max_matches.append(v)
+    # print("max_matches len", len(max_matches))
+    i = 0
+    while i < len(max_matches):
+        v = max_matches[i]
+        r, c = v[0:2]
+        n = 1
+        tail = max_matches[i][2:]
+        j = i + 1
+        while j < len(max_matches):
+            if abs(v[0] - max_matches[j][0]) < tail[0] and \
+                abs(v[1] - max_matches[j][1]) < tail[3] and \
+                max_matches[j][4] == v[4]:
+                r += max_matches[j][0]
+                c += max_matches[j][1]
+                n += 1
+                if max_matches[j][-1] > tail[-1]:
+                    tail = max_matches[j][2:]
+                del max_matches[j]
+            else:
+                j += 1
+        r = int(r / n + 0.5)
+        c = int(c / n + 0.5)
+        res.append((r, c) + tuple(tail))
+        i += 1
+    return res
 
 def max_rect(matches, trh=0.0, mode="all"):
     if mode != "all" and mode != "mean":
@@ -369,42 +409,10 @@ def max_rect(matches, trh=0.0, mode="all"):
             np.maximum(m[v[0] - v[2] - offset[0]: v[0] + v[2] - offset[0],
                        v[1] - v[3] - offset[1]: v[1] + v[3] - offset[1]], v[-1])
 
-    res = []
     if mode == "all":
-        for v in matches:
-            if m[v[0] - v[2] - offset[0]: v[0] + v[2] - offset[0],
-               v[1] - v[3] - offset[1]: v[1] + v[3] - offset[1]].max() - v[-1] <= trh:
-                res.append(v)
+        res = _all_mode_rect(m, matches, offset, trh)
     if mode == "mean":
-        max_matches = []
-        for v in matches:
-            if m[v[0] - v[2] - offset[0]: v[0] + v[2] - offset[0],
-               v[1] - v[3] - offset[1]: v[1] + v[3] - offset[1]].max() - v[-1] <= trh:
-                max_matches.append(v)
-        # print("max_matches len", len(max_matches))
-        i = 0
-        while i < len(max_matches):
-            v = max_matches[i]
-            r, c = v[0:2]
-            n = 1
-            tail = max_matches[i][2:]
-            j = i + 1
-            while j < len(max_matches):
-                if abs(v[0] - max_matches[j][0]) < tail[0] and \
-                        abs(v[1] - max_matches[j][1]) < tail[3] and \
-                        max_matches[j][4] == v[4]:
-                    r += max_matches[j][0]
-                    c += max_matches[j][1]
-                    n += 1
-                    if max_matches[j][-1] > tail[-1]:
-                        tail = max_matches[j][2:]
-                    del max_matches[j]
-                else:
-                    j += 1
-            r = int(r / n + 0.5)
-            c = int(c / n + 0.5)
-            res.append((r, c) + tuple(tail))
-            i += 1
+        res = _mean_mode_rect(m, matches, offset, trh)
     return res
 
 

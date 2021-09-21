@@ -2,7 +2,7 @@
 disable-noqa
 exclude = .git,.hg,__pycache__,venv
 max-line-length = 120
-max-complexity = 14
+max-complexity = 20
 inline-quotes = double
 multiline-quotes = """
 builtins = _

@@ -12,7 +12,7 @@ import json
 import cv2
 from epcore.elements.board import Board
 from .detect import detect_elements
-from .utils import FakeGuiConnector, dump_elements, save_detect_img
+from .utils import FakeGuiConnector, save_detect_img
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Detection and drawing bounding box.")

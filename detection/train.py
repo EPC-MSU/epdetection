@@ -443,7 +443,7 @@ def load_data_names_from_file(folder_to_idx, names, only_cluster, only_cluster_n
             #     logging.debug(str(i))
             try:
                 top, dirs, files = next(os.walk(os.path.join(train_folder, row[0])))
-            except StopIteration as e:
+            except StopIteration:
                 logging.error("Dataset is missing")
                 exit(-1)
             for d in dirs:
