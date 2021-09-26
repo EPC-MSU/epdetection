@@ -13,14 +13,7 @@ setup(name='epdetection',
       author_email='a.p.marakulin@gmail.com',
       license='CC0-1.0',
       packages=['detection'],
-      install_requires=[
-            'numpy==1.18.1',
-            'opencv-python==3.3.0.10',
-            'scikit-image==0.16.2',
-            'scikit-learn==0.20.1',
-            'scipy==1.5.4',
-            'hg+https://anonymous:anonymous@hg.ximc.ru/eyepoint/epcore#egg=epcore'
-      ],
+      install_requires=[],
       package_data={"detection": ["dumps/*"]},
       classifiers=[
             "Programming Language :: Python :: 3",
