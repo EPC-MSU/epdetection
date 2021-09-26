@@ -15,6 +15,7 @@ setup(name='epdetection',
       packages=['detection'],
       install_requires=[],
       package_data={"detection": ["dumps/*"]},
+      include_package_data=True,
       classifiers=[
             "Programming Language :: Python :: 3",
             "License :: OSI Approved :: CC0 License",
