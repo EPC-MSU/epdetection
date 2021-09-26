@@ -14,8 +14,10 @@
 
 ### Добавить модуль в requirements.txt вашего проекта
 ```bash
-# Формально говоря, в этом случае скачается репозиторий.
--e git+https://github.com/EPC-MSU/epdetection@1.0.2#egg=epdetection
+# В этом случае скачается репозиторий.
+-e git+https://github.com/EPC-MSU/epdetection@V.V.V#egg=epdetection
+# В этом случае установится в site-packages
+git+https://github.com/EPC-MSU/epdetection@V.V.V#egg=epdetection
 ```
 
 ### Запустить этот проект (из корня):
