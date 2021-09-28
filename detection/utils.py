@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-import warnings
 
 import numpy as np
 import cv2
@@ -219,6 +218,7 @@ def _polygon_center(corners):
         res += p
     return res / len(corners)
 
+
 def _polygon_square(corners):
     n = len(corners)
     area = 0.0
@@ -228,6 +228,7 @@ def _polygon_square(corners):
         area -= corners[j][0] * corners[i][1]
     area = abs(area) / 2.0
     return area
+
 
 def _in_polygon(pt, corners):
     if np.any((pt < corners.min(axis=0)) | (pt > corners.max(axis=0))):
@@ -319,6 +320,7 @@ def remove_intersecting(elements):
                 break
         i += 1
     return elements
+
 
 # TODO: Duplicated with vision/utils.py
 def pins_to_array(elements) -> np.ndarray:
