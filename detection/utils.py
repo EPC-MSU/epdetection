@@ -213,17 +213,31 @@ def _fourier_sum(a, period):
     return s
 
 
-# def _polygon_center(corners):
-#     with warnings.catch_warnings():
-#         warnings.simplefilter("ignore", category=RuntimeWarning)
-#         a = np.mean(corners, axis=0)
-#     return a
-
 def _polygon_center(corners):
     res = np.zeros(2)
     for p in corners:
         res += p
     return res / len(corners)
+
+def _polygon_square(corners):
+    n = len(corners)
+    area = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        area += corners[i][0] * corners[j][1]
+        area -= corners[j][0] * corners[i][1]
+    area = abs(area) / 2.0
+    return area
+
+def _in_polygon(pt, corners):
+    if np.any((pt < corners.min(axis=0)) | (pt > corners.max(axis=0))):
+        return False
+    ang = 0
+    for i in range(len(corners)):
+        p1 = corners[i] - pt
+        p2 = corners[(i + 1) % len(corners)] - pt
+        ang += np.arctan2(np.cross(p1, p2), np.dot(p1, p2))
+    return ang >= 6.2  # >= 2pi - eps
 
 
 def distance(pin1, pin2):
@@ -244,17 +258,6 @@ def select_one(elements, shape):
             max_score = (s + d) / 2
             max_i = i
     return max_i
-
-
-def _polygon_square(corners):
-    n = len(corners)
-    area = 0.0
-    for i in range(n):
-        j = (i + 1) % n
-        area += corners[i][0] * corners[j][1]
-        area -= corners[j][0] * corners[i][1]
-    area = abs(area) / 2.0
-    return area
 
 
 def find_nearest(a, n):
@@ -287,51 +290,35 @@ def lqfp_bounding(corners, offset_package, offset_pin):
     return new_corners
 
 
-def line_intersect(p11, p12, p21, p22):
-    d = (p22[1] - p21[1]) * (p12[0] - p11[0]) - (p22[0] - p21[0]) * (p12[1] - p11[1])
-    if d:
-        uA = ((p22[0] - p21[0]) * (p11[1] - p21[1]) - (p22[1] - p21[1]) * (p11[0] - p21[0])) / d
-        uB = ((p12[0] - p11[0]) * (p11[1] - p21[1]) - (p12[1] - p11[1]) * (p11[0] - p21[0])) / d
-    else:
-        return False
-    if not (0 <= uA <= 1 and 0 <= uB <= 1):
-        return False
-    return True
-
-
-def find_intersect(element1, element2):
-    lines1 = np.array([element1.bounding_zone, np.roll(element1.bounding_zone, 1, axis=0)])
-    lines2 = np.array([element2.bounding_zone, np.roll(element2.bounding_zone, 1, axis=0)])
-    lines1 = np.transpose(lines1, axes=[1, 0, 2])
-    lines2 = np.transpose(lines2, axes=[1, 0, 2])
-    for line1 in lines1:
-        for line2 in lines2:
-            if line_intersect(line1[0], line1[1], line2[0], line2[1]):
-                return True
-    return False
-
-
 def remove_intersecting(elements):
     i = 0
     while i < len(elements):
         j = i + 1
+        pci = _polygon_center(elements[i].bounding_zone)
+        sqi = _polygon_square(elements[i].bounding_zone)
         while j < len(elements):
-            if find_intersect(elements[i], elements[j]):
-                sqi = _polygon_square(elements[i].bounding_zone)
-                sqj = _polygon_square(elements[j].bounding_zone)
-                if sqi < sqj:
-                    del elements[i]
-                    i -= 1
-                    break
-                else:
-                    del elements[j]
-                    continue
-            else:
+            pcj = elements[j].pins[0].y, elements[j].pins[0].x  # _polygon_center(elements[j].bounding_zone)
+            # pcj = _polygon_center(elements[j].bounding_zone)
+            in_i = _in_polygon(pcj, elements[i].bounding_zone)
+            in_j = _in_polygon(pci, elements[j].bounding_zone)
+            if not in_i and not in_j:
                 j += 1
                 continue
+            if in_i and in_j:
+                sqj = _polygon_square(elements[j].bounding_zone)
+                if sqi < sqj:
+                    in_i = False
+                else:
+                    in_j = False
+            if in_i and not in_j:
+                del elements[j]
+                continue
+            if not in_i and in_j:
+                del elements[i]
+                i -= 1
+                break
         i += 1
     return elements
-
 
 # TODO: Duplicated with vision/utils.py
 def pins_to_array(elements) -> np.ndarray:
