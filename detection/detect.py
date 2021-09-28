@@ -472,7 +472,7 @@ def _detect_multipin(image, det, i, j, pat_i, pinw,
     logging.debug("result: %s", bool(result))
     if result is None:
         return
-    corners, pins_right, pins_left = result
+    corners, pins_bottom, pins_top = result
     # try to detect LQFP
     image_r = np.rot90(image, -1)
     i, j = idxrot(
@@ -494,18 +494,18 @@ def _detect_multipin(image, det, i, j, pat_i, pinw,
                                 pin_y_offset, patch_n_pins, edge_pins_n, debug_dir=debug_dir)
         logging.debug("result: %s", bool(result))
 
-    pins_top = []
-    pins_bottom = []
+    pins_left = []
+    pins_right = []
     if result is not None:
         corners_rr, pins_top_r, pins_bottom_r = result
         corners_r = []
-        # pins_top, pins_bottom = pins_top_r, pins_bottom_r
+        # pins_left, pins_right = pins_top_r, pins_bottom_r
         for p in pins_top_r:
             x, y = idxrot((p.x, p.y), image_r.shape, -1)
-            pins_top.append(Pin(x=x, y=y))
+            pins_left.append(Pin(x=x, y=y))
         for p in pins_bottom_r:
             x, y = idxrot((p.x, p.y), image_r.shape, -1)
-            pins_bottom.append(Pin(x=x, y=y))
+            pins_right.append(Pin(x=x, y=y))
         for p in corners_rr:
             corners_r.append(idxrot(p, image_r.shape, -1))
         # make corners for lqfp
@@ -518,21 +518,22 @@ def _detect_multipin(image, det, i, j, pat_i, pinw,
     else:
         name = name.split("&")[-1]
 
-    h_pins = (len(pins_right) + len(pins_left))  # // 2 * 2
-    w_pins = (len(pins_top) + len(pins_bottom))  # // 2 * 2
+    h_pins = (len(pins_bottom) + len(pins_top))  # // 2 * 2
+    w_pins = (len(pins_left) + len(pins_right))  # // 2 * 2
+
+    rotated_pins = []
+    for p in pins_bottom + pins_left + pins_top + pins_right:
+        y, x = idxrot((p.x, p.y), image.shape, -r)
+        rotated_pins.append(Pin(x=x, y=y))
+
+    rotated_corners = np.array([idxrot(pt, image.shape, -r) for pt in corners])
+    rotated_corners[:, [0, 1]] = rotated_corners[:, [1, 0]]
+
+    elem = Element(pins=rotated_pins, set_automatically=True,
+                   name=name, bounding_zone=rotated_corners, rotation=r)
     if r > 0 and w_pins > 0 and h_pins > 0:
         r = 0
         w_pins, h_pins = h_pins, w_pins
-    rotated_pins = []
-    for p in pins_right + pins_top + pins_left + pins_bottom:
-        x, y = idxrot((p.x, p.y), image.shape, -r)
-        rotated_pins.append(Pin(x=y, y=x))
-
-    rotated_corners = np.array([idxrot((pt[0], pt[1]), image.shape, -r) for pt in corners])
-    bz_xy = rotated_corners
-    bz_xy[:, [0, 1]] = bz_xy[:, [1, 0]]
-    elem = Element(pins=rotated_pins, set_automatically=True,
-                   name=name, bounding_zone=bz_xy, rotation=r)
     elem = fitSizes(elem, h_pins, w_pins)
     return elem
 

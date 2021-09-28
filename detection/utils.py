@@ -214,10 +214,30 @@ def _fourier_sum(a, period):
 
 
 def _polygon_center(corners):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=RuntimeWarning)
-        a = np.mean(corners, axis=0)
-    return a
+    res = np.zeros(2)
+    for p in corners:
+        res += p
+    return res / len(corners)
+
+def _polygon_square(corners):
+    n = len(corners)
+    area = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        area += corners[i][0] * corners[j][1]
+        area -= corners[j][0] * corners[i][1]
+    area = abs(area) / 2.0
+    return area
+
+def _in_polygon(pt, corners):
+    if np.any((pt < corners.min(axis=0)) | (pt > corners.max(axis=0))):
+        return False
+    ang = 0
+    for i in range(len(corners)):
+        p1 = corners[i] - pt
+        p2 = corners[(i + 1) % len(corners)] - pt
+        ang += np.arctan2(np.cross(p2, p1), np.dot(p2, p1))
+    return ang >= 6.2  # >= 2pi - eps
 
 
 def distance(pin1, pin2):
@@ -240,17 +260,6 @@ def select_one(elements, shape):
     return max_i
 
 
-def _polygon_square(corners):
-    n = len(corners)
-    area = 0.0
-    for i in range(n):
-        j = (i + 1) % n
-        area += corners[i][0] * corners[j][1]
-        area -= corners[j][0] * corners[i][1]
-    area = abs(area) / 2.0
-    return area
-
-
 def find_nearest(a, n):
     i = np.array(a).searchsorted(n)
     if i == len(a) or i == 0:
@@ -260,17 +269,6 @@ def find_nearest(a, n):
         return a[i - 1]
     else:
         return a[i]
-
-
-def _in_polygon(pt, corners):
-    if np.any((pt < np.min(corners, axis=0)) | (pt > np.max(corners, axis=0))):
-        return False
-    ang = 0
-    for i in range(len(corners)):
-        p1 = corners[i] - pt
-        p2 = corners[(i + 1) % len(corners)] - pt
-        ang += np.arctan2(np.cross(p1, p2), np.dot(p1, p2))
-    return ang >= 6.2  # >= 2pi - eps
 
 
 def lqfp_bounding(corners, offset_package, offset_pin):
@@ -299,7 +297,8 @@ def remove_intersecting(elements):
         pci = _polygon_center(elements[i].bounding_zone)
         sqi = _polygon_square(elements[i].bounding_zone)
         while j < len(elements):
-            pcj = elements[j].pins[0].x, elements[j].pins[0].y
+            pcj = elements[j].pins[0].x, elements[j].pins[0].y  # _polygon_center(elements[j].bounding_zone)
+            # pcj = _polygon_center(elements[j].bounding_zone)
             in_i = _in_polygon(pcj, elements[i].bounding_zone)
             in_j = _in_polygon(pci, elements[j].bounding_zone)
             if not in_i and not in_j:
@@ -320,7 +319,6 @@ def remove_intersecting(elements):
                 break
         i += 1
     return elements
-
 
 # TODO: Duplicated with vision/utils.py
 def pins_to_array(elements) -> np.ndarray:
