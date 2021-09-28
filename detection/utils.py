@@ -236,7 +236,7 @@ def _in_polygon(pt, corners):
     for i in range(len(corners)):
         p1 = corners[i] - pt
         p2 = corners[(i + 1) % len(corners)] - pt
-        ang += np.arctan2(np.cross(p1, p2), np.dot(p1, p2))
+        ang += np.arctan2(np.cross(p2, p1), np.dot(p2, p1))
     return ang >= 6.2  # >= 2pi - eps
 
 
@@ -297,7 +297,7 @@ def remove_intersecting(elements):
         pci = _polygon_center(elements[i].bounding_zone)
         sqi = _polygon_square(elements[i].bounding_zone)
         while j < len(elements):
-            pcj = elements[j].pins[0].y, elements[j].pins[0].x  # _polygon_center(elements[j].bounding_zone)
+            pcj = elements[j].pins[0].x, elements[j].pins[0].y  # _polygon_center(elements[j].bounding_zone)
             # pcj = _polygon_center(elements[j].bounding_zone)
             in_i = _in_polygon(pcj, elements[i].bounding_zone)
             in_j = _in_polygon(pci, elements[j].bounding_zone)

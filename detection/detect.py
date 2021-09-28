@@ -522,9 +522,9 @@ def _detect_multipin(image, det, i, j, pat_i, pinw,
     w_pins = (len(pins_left) + len(pins_right))  # // 2 * 2
 
     rotated_pins = []
-    for p in pins_right + pins_top + pins_left + pins_bottom:
-        x, y = idxrot((p.x, p.y), image.shape, -r)
-        rotated_pins.append(Pin(x=y, y=x))
+    for p in pins_bottom + pins_left + pins_top + pins_right:
+        y, x = idxrot((p.x, p.y), image.shape, -r)
+        rotated_pins.append(Pin(x=x, y=y))
 
     rotated_corners = np.array([idxrot(pt, image.shape, -r) for pt in corners])
     rotated_corners[:, [0, 1]] = rotated_corners[:, [1, 0]]
