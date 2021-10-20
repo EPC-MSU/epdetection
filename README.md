@@ -15,9 +15,11 @@
 ### Добавить модуль в requirements.txt вашего проекта
 ```bash
 # В этом случае скачается репозиторий.
--e git+https://github.com/EPC-MSU/epdetection@V.V.V#egg=epdetection
+-e git+https://github.com/EPC-MSU/epdetection@main#egg=epdetection
 # В этом случае установится в site-packages
-git+https://github.com/EPC-MSU/epdetection@V.V.V#egg=epdetection
+git+https://github.com/EPC-MSU/epdetection@main#egg=epdetection
+
+# If you want specific version, replace main to V.V.V
 ```
 
 ### Запустить этот проект (из корня):
