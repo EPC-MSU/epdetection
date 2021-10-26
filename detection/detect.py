@@ -3,7 +3,7 @@ detect.py - main file to detection functions.
 See more in doc/readme.md
 """
 __author__ = "medvdanil@gmail.com (Daniil Medvedev)"
-__editor__ = "a.p.marakulin@gmail.com (Andrey Marakulin)"
+__maintainer__ = "a.p.marakulin@gmail.com (Andrey Marakulin)"
 
 import os
 import logging
