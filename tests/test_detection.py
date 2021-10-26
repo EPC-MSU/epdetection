@@ -117,6 +117,14 @@ class DetectTests(unittest.TestCase):
         logger.info(f"TEST[5] Clf quality = {score:.2f} [Calibration chessboard | {folder_name}]")
         self.assertTrue(score > self.pass_trh)
 
+    def test_board_save(self, folder_name="elm_test1"):
+        img, trueres = load_test_data(folder_name)
+        board_json = Board(trueres).to_json()
+        with open(os.path.join("log", "tests", folder_name, "test_board_save.json"), "w") as dump_file:
+            json.dump(board_json, dump_file, separators=(",", ":"), indent=2)
+        logger.info(f"TEST[6] Board json saved successfully [{folder_name} | test_board_save.json]")
+        self.assertTrue(True)  # Test pass witout errors
+
 
 if __name__ == "__main__":
     unittest.main()
