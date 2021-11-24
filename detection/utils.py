@@ -39,6 +39,9 @@ class FakeGuiConnector:
     def send_skip_stages(self):
         pass
 
+    def reset_progress(self):
+        pass
+
 
 def remove_temp_dir(debug_dir, find_one):
     if debug_dir and not find_one:

@@ -304,8 +304,8 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
         if max_corr < det.parameters[c][1] * det.trh_corr_mult:
             continue
 
-        logging.debug("+ %d, %d corr=%.3f, c=%d" % (v[1], v[0], val_corr, c))
-        logging.debug("  p of classes: %s", ", ".join("%.2f" % p for p in pp))
+        # logging.debug("+ %d, %d corr=%.3f, c=%d" % (v[1], v[0], val_corr, c))
+        # logging.debug("  p of classes: %s", ", ".join("%.2f" % p for p in pp))
         result.append((i, j, c, p_res))
         if debug_dir is not None:
             cv2.imsave(debug_dir + "c%d_%04d_%04d_%.2f_p%.2f_r%d.bmp" %
@@ -342,6 +342,7 @@ def _detect_without_clf(debug_dir, det, image_rgb, non_overlap_hyp):
 
 
 def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, non_overlap_hyp):
+    gc.send_num_stages(len(en_patterns))
     for pat_i, pat in en_patterns:
         if pat is None:
             continue
@@ -361,6 +362,8 @@ def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, no
 
         logging.debug("p%d: %d peaks" % (pat_i, len(matches)))
         non_overlap_hyp += max_rect(matches, trh=TRH_MAX_RECT)
+        gc.send_next_stage()
+    gc.reset_progress()
     return non_overlap_hyp
 
 
