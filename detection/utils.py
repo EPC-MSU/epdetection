@@ -30,13 +30,13 @@ class FakeGuiConnector:
     def check_skip(self):
         pass
 
+    def send_num_stages(self, number):
+        pass
+
     def send_next_stage(self):
         pass
 
-    def send_num_stages(self):
-        pass
-
-    def send_skip_stages(self):
+    def send_skip_stages(self, decrement):
         pass
 
     def reset_progress(self):
