@@ -251,7 +251,7 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
         pat_to_class[k] = np.where(det.clf.classes_ == cluster_id)[0][0]
 
     # max_rect
-    logging.debug("%d hypothesis", len(non_overlap_hyp))
+    logging.info("Founded: %d hypothesis", len(non_overlap_hyp))
     if len(non_overlap_hyp) == 0:
         return []
 
@@ -314,7 +314,7 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
                                 j:j + det.patterns[c].shape[1]],
                                 -det.pat_rotations[c]))
 
-    logging.debug("result: %d patches", len(result))
+    logging.info("Result: %d patches", len(result))
     return result
 
 
@@ -360,7 +360,7 @@ def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, no
                     shape07_half[0], shape07_half[1], pat_i, corr[i, j])
                    for i, j in peak_k(corr, trh_corr, k=3)]
 
-        logging.debug("p%d: %d peaks" % (pat_i, len(matches)))
+        logging.info("For pat %d found: %d peaks" % (pat_i, len(matches)))
         non_overlap_hyp += max_rect(matches, trh=TRH_MAX_RECT)
         gc.send_next_stage()
     gc.reset_progress()
