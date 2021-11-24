@@ -363,7 +363,7 @@ def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, no
         logging.info("For pat %d found: %d peaks" % (pat_i, len(matches)))
         non_overlap_hyp += max_rect(matches, trh=TRH_MAX_RECT)
         gc.send_next_stage()
-    gc.reset_progress()
+    gc.change_progress_type()
     return non_overlap_hyp
 
 

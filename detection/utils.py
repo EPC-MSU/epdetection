@@ -39,7 +39,7 @@ class FakeGuiConnector:
     def send_skip_stages(self, decrement):
         pass
 
-    def reset_progress(self):
+    def change_progress_type(self):
         pass
 
 
