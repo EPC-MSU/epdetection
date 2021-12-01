@@ -343,7 +343,7 @@ def _detect_without_clf(debug_dir, det, image_rgb, non_overlap_hyp):
 def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, non_overlap_hyp):
     if len(en_patterns) == 0:
         return []
-    if en_patterns[0][0] != 0: # Skip detection in BGA mode
+    if en_patterns[0][0] != 0:  # Skip detection in BGA mode
         gc.send_num_stages(len(en_patterns))
     for pat_i, pat in en_patterns:
         if pat is None:
