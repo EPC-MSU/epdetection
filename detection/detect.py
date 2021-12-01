@@ -241,7 +241,6 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
 
     # 1 class
     if det.clf is None:
-
         return _detect_without_clf(debug_dir, det, image_rgb, non_overlap_hyp)
 
     is_elem_class = np.array([0.0 if det.patterns[pat_i] is None else 1.0
@@ -326,7 +325,7 @@ def _detect_without_clf(debug_dir, det, image_rgb, non_overlap_hyp):
         j = v[1] - det.patterns[v[4]].shape[1] // 2
         c = v[4]
         result.append((i, j, c, v[-1]))
-        logging.debug("+ %d, %d corr=%.3f, c=%d" % (v[1], v[0], v[-1], c))
+        # logging.debug("+ %d, %d corr=%.3f, c=%d" % (v[1], v[0], v[-1], c))
         if debug_dir is not None:
             filename = debug_dir + "c%d_%04d_%04d_%.2f_r%d.bmp" % (
                 c, v[1], v[0], v[-1], det.pat_rotations[c])
@@ -342,7 +341,10 @@ def _detect_without_clf(debug_dir, det, image_rgb, non_overlap_hyp):
 
 
 def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, non_overlap_hyp):
-    gc.send_num_stages(len(en_patterns))
+    if len(en_patterns) == 0:
+        return []
+    if en_patterns[0][0] != 0: # Skip detection in BGA mode
+        gc.send_num_stages(len(en_patterns))
     for pat_i, pat in en_patterns:
         if pat is None:
             continue
@@ -362,7 +364,9 @@ def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, no
 
         logging.info("For pat %d found: %d peaks" % (pat_i, len(matches)))
         non_overlap_hyp += max_rect(matches, trh=TRH_MAX_RECT)
+        # if len(en_patterns) != 0:
         gc.send_next_stage()
+    # if len(en_patterns) != 0:
     gc.change_progress_type()
     return non_overlap_hyp
 
