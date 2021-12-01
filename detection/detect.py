@@ -49,7 +49,6 @@ def get_element_names_by_mode(mode: str):
     names : list
         Names of available elements for specific mode
     """
-    print(os.getcwd())
     types_filename = clf_paths[mode]["csv"]
     element_names = []
     with open(types_filename) as types_file:
