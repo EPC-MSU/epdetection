@@ -11,7 +11,6 @@ import logging
 from ast import literal_eval
 
 import numpy as np
-from skimage.io import imsave
 import cv2
 from cv2 import matchTemplate, TM_CCOEFF_NORMED
 
