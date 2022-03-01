@@ -6,10 +6,12 @@ __author__ = "medvdanil@gmail.com (Daniil Medvedev)"
 __maintainer__ = "a.p.marakulin@gmail.com (Andrey Marakulin)"
 
 import os
+import json
 import logging
 from ast import literal_eval
 
 import numpy as np
+from skimage.io import imsave
 import cv2
 from cv2 import matchTemplate, TM_CCOEFF_NORMED
 
@@ -19,6 +21,7 @@ from detection.train import extract_hogs_opencv, Detector
 from detection.utils import max_angle_bin, pins_to_array, remove_intersecting, idxrot, rgb2gray, \
     lqfp_bounding, find_nearest, distance, dist2, peak_k, select_one, fitSizes, \
     yield_patches, max_rect, pins_right_edge, remove_temp_dir, FakeGuiConnector, PIX_PER_MM
+from detect_nn import detect_by_one_model, extended_classes
 
 TRH_MAX_RECT = 0.25
 TRH_CLOSP = 0.15
@@ -293,8 +296,8 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
         for k, cluster_id in enumerate(det.clusters):
             cur_corr = -1.
             if cluster_id == det.clusters[c] and det.patterns[k] is not None and \
-                    det.patterns[k].shape == det.patterns[v[4]].shape and \
-                    det.pat_rotations[k] == det.pat_rotations[v[4]]:
+                det.patterns[k].shape == det.patterns[v[4]].shape and \
+                det.pat_rotations[k] == det.pat_rotations[v[4]]:
                 cur_corr = matchTemplate(patch, det.patterns[k], TM_CCOEFF_NORMED)[0][0]
             if cur_corr > max_corr:
                 c = k
@@ -382,7 +385,7 @@ def _closest_peak(p0, img, det, only_pat_id=None, trh_mult=0.7, debug_dir=None):
     det.trh_prob *= trh_mult
     for v in _detect(FakeGuiConnector(), img, det, only_pat_ids=[only_pat_id], debug_dir=debug_dir):
         if pos[0] == -1 or v[3] > prob + TRH_CLOSP or \
-                dist2((v[0], v[1]), p0) < dist2(pos, p0) and prob - v[3] < TRH_CLOSP:
+            dist2((v[0], v[1]), p0) < dist2(pos, p0) and prob - v[3] < TRH_CLOSP:
             pos = v[0], v[1]
             prob = max(v[3], prob)
     det.trh_corr_mult, det.trh_prob = trh_old
@@ -602,8 +605,8 @@ def _detect_common_return_elements(debug_dir, det, elements, gc, image, only_pat
 
     for i, szk in enumerate(szk_list):
         det.patterns[0] = cv2.resize(orig_pat, (0, 0), fx=szk, fy=szk)
-        els = _detect(gc, image, det, find_rotations=True,
-                      debug_dir=debug_dir, only_pat_ids=only_pat_ids)
+        els = _detect_by_nn(gc, image, det, find_rotations=True, debug_dir=debug_dir,
+                           only_pat_ids=only_pat_ids)
 
         val = np.sum(np.array(els)[:, -1] > 0.9) / len(els) if len(els) > 0 else 0.0
         sizes_els.append(els)
@@ -640,7 +643,12 @@ def _detect_common_return_elements(debug_dir, det, elements, gc, image, only_pat
 
 def _detect_common_handle_detect(debug_dir, det, edge_pins_n, elements, gc, image,
                                  only_pat_ids, patch_n_pins, pin_lists, pins_w, pins_y_offset):
-    for i, j, res_i, p in _detect(gc, image, det, find_rotations=True, debug_dir=debug_dir, only_pat_ids=only_pat_ids):
+    res = _detect_by_nn(gc, image, det, find_rotations=True, debug_dir=debug_dir, only_pat_ids=only_pat_ids)
+
+    # stime = time.time()
+    # count_multipin = sum([1 if det.parameters[res_i][2] == "multipin" else 0 for _, _, res_i, _ in res])
+    # i_multipin = 0  # For correct progerss bars
+    for counter, (i, j, res_i, p) in enumerate(res):
         if det.parameters[res_i][2] == "multipin":
             elem = _detect_multipin(image, det, i, j, res_i,
                                     pins_w[res_i], pins_y_offset[res_i],
@@ -714,3 +722,90 @@ def _filter_detection_ids(det, det_names, find_one, img):
     if find_one:
         ids = filtered_ids
     return ids
+
+
+def detect_return_result(debug_dir, det, image, non_overlap_hyp):
+    non_overlap = max_rect(non_overlap_hyp, mode="mean")
+    result = []
+    for v in non_overlap:
+        i = v[0] - det.patterns[v[4]].shape[0] // 2
+        j = v[1] - det.patterns[v[4]].shape[1] // 2
+        c = v[4]
+        result.append((i, j, c, v[-1]))
+        logging.debug("+ %d, %d corr=%.3f, c=%d" % (v[1], v[0], v[-1], c))
+        if debug_dir is not None:
+            try:
+                filename = debug_dir + "c%d_%04d_%04d_%.2f_r%d.bmp" % (
+                    c, v[1], v[0], v[-1], det.pat_rotations[c])
+                cv2.imsave(filename, np.rot90(image[i:i + det.patterns[c].shape[0],
+                                              j:j + det.patterns[c].shape[1]],
+                                              -det.pat_rotations[c]))
+            except Exception:
+                logging.error("Can't save %s.", filename)
+    return result
+
+
+def _detect_by_nn(logger, image, det, find_rotations=False, only_pat_ids=None, debug_dir=None, find_one=False):
+    # Preparing image
+    logging.debug(f"Selected patterns: {only_pat_ids}")
+
+    non_overlap_hyp = []
+    if only_pat_ids is None:
+        en_patterns = enumerate(det.patterns)
+    else:
+        en_patterns = [(i, det.patterns[i]) for i in only_pat_ids]
+
+    im = rgb2gray(image)
+    im8 = (im * 255).astype(np.uint8)
+    logging.debug("img %s, resized pattern %s", im.shape, det.resized_shape)
+
+    # Correlation function
+    non_overlap_hyp = _detect_handle_en_patterns(det, en_patterns, find_rotations, im, im8, logger, non_overlap_hyp)
+    logger.progressSignal_find3.emit(100)
+
+    if det.clf is None:
+        return detect_return_result(debug_dir, det, image, non_overlap_hyp)
+
+    logging.debug(f"Hypothesis: {len(non_overlap_hyp)}")
+    if len(non_overlap_hyp) == 0:
+        return []
+
+    # Run neural network detection on founded candidates
+    logger.progressSignal_find4.emit(0)
+    rgb_image = cv2.cvtColor((image * 255).astype(np.uint8), cv2.COLOR_RGB2BGR)
+
+    # Load models info
+    try:
+        model_path = "dumps"
+        schema_path = None
+        for file in os.listdir(model_path):
+            if file.startswith("model") and file.endswith("schema.json"):
+                schema_path = os.path.join(model_path, file)
+                break
+        with open(schema_path) as data_file:
+            model_info = json.load(data_file)
+            model_info["path"] = model_path
+    except Exception as err:
+        logging.error(err)
+        return []
+
+    result = detect_by_one_model(logger, rgb_image, det, model_info, non_overlap_hyp, find_one)
+
+    if find_one:
+        result = sorted(result, key=lambda tup: tup[3], reverse=True)
+        result_best_prob = result[0]
+        result_filter = []
+        # If element with max prob is multipin, then add other multipins elements
+        if det.parameters[result_best_prob[2]][2] == "multipin":
+            ext_classes = extended_classes(det, result_best_prob[2])
+            for res in result:
+                # if det.parameters[res[2]][2] == "multipin":
+                #     result_filter.append(res)
+                if res[2] in ext_classes:
+                    result_filter.append(res)
+        else:
+            result_filter.append(result_best_prob)
+        result = result_filter
+
+    logger.progressSignal_find4.emit(75)
+    return result

@@ -3,4 +3,8 @@ opencv-python==3.3.0.10
 scikit-image==0.16.2
 scikit-learn==0.20.1
 scipy==1.5.4
+tensorboard==2.2.2
+tensorboard-plugin-wit==1.7.0
+tensorflow==2.2.0
+tensorflow-estimator==2.2.0
 hg+https://anonymous:anonymous@hg.ximc.ru/eyepoint/epcore#egg=epcore
