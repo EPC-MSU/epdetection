@@ -111,7 +111,6 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
         # threshold = det.trh_prob
         # if find_one:
         threshold = 0  # TODO: Fix threshold
-        print("threshold", threshold)
         result = end_normal(det, threshold, predict_arr, candidates, classes_groups, t)
     elif end_mode == "end_thd":
         threshold = define_threshold(det.trh_prob, data)
