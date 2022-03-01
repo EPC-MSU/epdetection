@@ -18,12 +18,12 @@ echo Starting...
 echo Install virtual enviroment...
 echo ---------------------------------------------------------------
 
-python -m pip install virtualenv --upgrade --disable-pip-version-check
+python -m pip install --user --no-warn-script-location --disable-pip-version-check --no-index -f ./deps virtualenv
 python -m venv venv
 echo ---------------------------------------------------------------
 echo Changing pip version to specified...
 echo ---------------------------------------------------------------
-venv\Scripts\python -m pip install pip --upgrade
+venv\Scripts\python -m pip install --no-warn-script-location --disable-pip-version-check --no-index -f ./deps/pip pip==20.1.1
 echo ---------------------------------------------------------------
 echo Installing packages into venv...
 echo ---------------------------------------------------------------
