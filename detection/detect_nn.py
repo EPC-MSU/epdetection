@@ -108,9 +108,10 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
     # ==== Run some code by end_mode
     logging.info("Ending...")
     if end_mode == "end_normal":
-        threshold = det.trh_prob
-        if find_one:
-            threshold = 0
+        # threshold = det.trh_prob
+        # if find_one:
+        threshold = 0  # TODO: Fix threshold
+        print("threshold", threshold)
         result = end_normal(det, threshold, predict_arr, candidates, classes_groups, t)
     elif end_mode == "end_thd":
         threshold = define_threshold(det.trh_prob, data)
@@ -120,7 +121,6 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
     else:
         logging.debug("End mode unrecognized. Model skipped.")
         return []
-
     return result
 
 
@@ -189,11 +189,10 @@ def end_normal(det, threshold, predict_arr, candidates, classes_groups, t):
     # nn_classes_ext = dict()  # dict with nn output number and it'sextended classes
     # for i, cl in enumerate(classes):
     #     nn_classes_ext[i + 1] = extended_classes(det, cl)
-
+    # print(predict_arr)
     for i, prob_arr in enumerate(predict_arr):
         candidate_class = candidates[i][2]
         actual_class, prob = find_class_id(prob_arr, classes_groups, candidate_class)
-
         if (prob > threshold) and (actual_class is not None):
             result.append((candidates[i][0], candidates[i][1], actual_class, prob))
 
