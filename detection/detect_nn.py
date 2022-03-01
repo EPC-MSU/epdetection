@@ -12,14 +12,14 @@ import tensorflow as tf
 # os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
-class PredictCallback(tf.keras.callbacks.Callback):
-    def __init__(self, logger, total_batches):
-        super().__init__()
-        self.logger = logger
-        self.total_batches = total_batches
-
-    def on_predict_batch_end(self, batch, logs=None):
-        self.logger.progressSignal_find4.emit(30 + int(30 * batch / self.total_batches))
+# class PredictCallback(tf.keras.callbacks.Callback):
+#     def __init__(self, logger, total_batches):
+#         super().__init__()
+#         self.logger = logger
+#         self.total_batches = total_batches
+#
+#     def on_predict_batch_end(self, batch, logs=None):
+#         self.logger.progressSignal_find4.emit(30 + int(30 * batch / self.total_batches))
 
 
 class Stamp:
@@ -34,7 +34,7 @@ class Stamp:
         self.t_start = self.t_end
 
 
-def detect_by_one_model(logger, rgb_image, det, model_info, non_overlap_hyp, find_one):
+def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
     """
     This function return elements list in format:
         (top_left_coordinate_y, top_left_coordinate_x, class_id, probability)
@@ -80,13 +80,13 @@ def detect_by_one_model(logger, rgb_image, det, model_info, non_overlap_hyp, fin
     # ==== Run some code by start_mode
     logging.info("Preparing images for recognize...")
     if start_mode == "cut_normal":
-        candidates, candidates_img = cut_rotate_and_normalize(det, logger, jpg_image, specified_hyp)
+        candidates, candidates_img = cut_rotate_and_normalize(det, jpg_image, specified_hyp)
         logging.info(f"Candidates found: {len(candidates)}")
     elif start_mode == "cut32":
-        candidates, candidates_img = cut_rotate_and_normalize(det, logger, jpg_image, specified_hyp, x32=True)
+        candidates, candidates_img = cut_rotate_and_normalize(det, jpg_image, specified_hyp, x32=True)
         logging.info(f"Candidates found: {len(candidates)}")
     elif start_mode == "cut32_bw":
-        candidates, candidates_img = cut_rotate_and_normalize(det, logger, jpg_image, specified_hyp, x32=True,
+        candidates, candidates_img = cut_rotate_and_normalize(det, jpg_image, specified_hyp, x32=True,
                                                               bw=True)
         logging.info(f"Candidates found: {len(candidates)}")
     else:
@@ -97,12 +97,11 @@ def detect_by_one_model(logger, rgb_image, det, model_info, non_overlap_hyp, fin
     logging.info("Predicting...")
     total_batches = int(len(candidates_img) / 32)
     try:
-        predict_arr = model.predict(candidates_img, batch_size=32,
-                                    callbacks=[PredictCallback(logger, total_batches)])
+        predict_arr = model.predict(candidates_img, batch_size=32)
     except ZeroDivisionError:
         predict_arr = model.predict(candidates_img)
     del model
-    logger.progressSignal_find4.emit(60)
+    # logger.progressSignal_find4.emit(60)
     logging.info("Predict done.")
     t.count("Predict")
 
@@ -135,7 +134,7 @@ def extended_classes(det, cl_id):
     return same_classes
 
 
-def cut_rotate_and_normalize(det, logger, jpg_image, specified_hyp, x32=False, bw=False):
+def cut_rotate_and_normalize(det, jpg_image, specified_hyp, x32=False, bw=False):
     """
     return:
     (candidates, candidates_img)
@@ -155,14 +154,14 @@ def cut_rotate_and_normalize(det, logger, jpg_image, specified_hyp, x32=False, b
             patch_rotated = cv2.cvtColor(patch_rotated, cv2.COLOR_BGR2GRAY)
         candidates_img.append(patch_rotated)
         candidates.append((y1, x1, c, p))
-        logger.progressSignal_find4.emit(int(30 * i / len(specified_hyp)))
+        # logger.progressSignal_find4.emit(int(30 * i / len(specified_hyp)))
 
     candidates_img = np.array(candidates_img)
     candidates_img = candidates_img / 255.0
     logging.debug(f"Candidates: {len(candidates_img)}")
     if bw:
         candidates_img = candidates_img[..., tf.newaxis]
-    logger.progressSignal_find4.emit(30)
+    # logger.progressSignal_find4.emit(30)
     return candidates, candidates_img
 
 

@@ -1,3 +1,5 @@
 venv/
+deps/
 .idea
-__pycache__/
+log/
+__pycache__

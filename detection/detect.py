@@ -20,7 +20,7 @@ from detection.train import extract_hogs_opencv, Detector
 from detection.utils import max_angle_bin, pins_to_array, remove_intersecting, idxrot, rgb2gray, \
     lqfp_bounding, find_nearest, distance, dist2, peak_k, select_one, fitSizes, \
     yield_patches, max_rect, pins_right_edge, remove_temp_dir, FakeGuiConnector, PIX_PER_MM
-from detect_nn import detect_by_one_model, extended_classes
+from .detect_nn import detect_by_one_model, extended_classes
 
 TRH_MAX_RECT = 0.25
 TRH_CLOSP = 0.15
@@ -744,10 +744,9 @@ def detect_return_result(debug_dir, det, image, non_overlap_hyp):
     return result
 
 
-def _detect_by_nn(logger, image, det, find_rotations=False, only_pat_ids=None, debug_dir=None, find_one=False):
+def _detect_by_nn(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=None, find_one=False):
     # Preparing image
     logging.debug(f"Selected patterns: {only_pat_ids}")
-
     non_overlap_hyp = []
     if only_pat_ids is None:
         en_patterns = enumerate(det.patterns)
@@ -759,9 +758,7 @@ def _detect_by_nn(logger, image, det, find_rotations=False, only_pat_ids=None, d
     logging.debug("img %s, resized pattern %s", im.shape, det.resized_shape)
 
     # Correlation function
-    non_overlap_hyp = _detect_handle_en_patterns(det, en_patterns, find_rotations, im, im8, logger, non_overlap_hyp)
-    logger.progressSignal_find3.emit(100)
-
+    non_overlap_hyp = _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, non_overlap_hyp)
     if det.clf is None:
         return detect_return_result(debug_dir, det, image, non_overlap_hyp)
 
@@ -770,25 +767,25 @@ def _detect_by_nn(logger, image, det, find_rotations=False, only_pat_ids=None, d
         return []
 
     # Run neural network detection on founded candidates
-    logger.progressSignal_find4.emit(0)
     rgb_image = cv2.cvtColor((image * 255).astype(np.uint8), cv2.COLOR_RGB2BGR)
 
     # Load models info
-    try:
-        model_path = "dumps"
-        schema_path = None
-        for file in os.listdir(model_path):
-            if file.startswith("model") and file.endswith("schema.json"):
-                schema_path = os.path.join(model_path, file)
-                break
-        with open(schema_path) as data_file:
-            model_info = json.load(data_file)
-            model_info["path"] = model_path
-    except Exception as err:
-        logging.error(err)
-        return []
+    # try:
+    model_path = os.path.join("detection", "models")
+    schema_path = None
+    for file in os.listdir(model_path):
+        print(file)
+        if file.startswith("model") and file.endswith("schema.json"):
+            schema_path = os.path.join(model_path, file)
+            break
+    with open(schema_path) as data_file:
+        model_info = json.load(data_file)
+        model_info["path"] = model_path
+    # except Exception as err:
+    #     logging.error(err)
+    #     return []
 
-    result = detect_by_one_model(logger, rgb_image, det, model_info, non_overlap_hyp, find_one)
+    result = detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one)
 
     if find_one:
         result = sorted(result, key=lambda tup: tup[3], reverse=True)
@@ -805,6 +802,4 @@ def _detect_by_nn(logger, image, det, find_rotations=False, only_pat_ids=None, d
         else:
             result_filter.append(result_best_prob)
         result = result_filter
-
-    logger.progressSignal_find4.emit(75)
     return result
