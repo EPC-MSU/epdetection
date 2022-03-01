@@ -7,4 +7,4 @@ tensorboard==2.2.2
 tensorboard-plugin-wit==1.7.0
 tensorflow==2.2.0
 tensorflow-estimator==2.2.0
-hg+https://anonymous:anonymous@hg.ximc.ru/eyepoint/epcore#egg=epcore
+-e hg+https://anonymous:anonymous@hg.ximc.ru/eyepoint/epcore@dev-0.1#egg=epcore
