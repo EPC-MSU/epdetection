@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='epdetection',
-      version='1.5.9',  # 1.5.x reserved for neural networks
+      version='1.5.0',  # 1.5.x reserved for neural networks
       description='PCB components detection module for EyePoint P10.',
       long_description=long_description,
       long_description_content_type="text/markdown",
