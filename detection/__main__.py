@@ -2,7 +2,7 @@
 This file use for console module call
 
 For example:
-python -m detection --image detection//tests//elm_test1/image.png --draw-elements
+python -m detection --image tests//elm_test1/image.png --draw-elements
 """
 import logging
 import argparse
