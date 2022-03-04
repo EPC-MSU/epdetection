@@ -15,7 +15,7 @@ goto :choice
 :install
 echo ---------------------------------------------------------------
 echo Starting...
-echo Install virtual enviroment...
+echo Install virtual environment...
 echo ---------------------------------------------------------------
 
 python -m pip install --user --no-warn-script-location --disable-pip-version-check --no-index -f ./deps virtualenv
@@ -29,7 +29,7 @@ echo Installing packages into venv...
 echo ---------------------------------------------------------------
 venv\Scripts\python -m pip install -r requirements.txt
 echo ---------------------------------------------------------------
-echo Virtual enviroment info:
+echo Virtual environment info:
 echo ---------------------------------------------------------------
 venv\Scripts\python --version
 venv\Scripts\python -m pip --version
