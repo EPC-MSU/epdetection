@@ -3,4 +3,5 @@ opencv-python==3.3.0.10
 scikit-image==0.16.2
 scikit-learn==0.20.1
 scipy==1.5.4
+dataclasses==0.8
 hg+https://anonymous:anonymous@hg.ximc.ru/eyepoint/epcore#egg=epcore
