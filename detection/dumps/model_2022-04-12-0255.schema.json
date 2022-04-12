@@ -1,12 +1,12 @@
 {
   "title": "Neural network model description format for P10",
-  "author": "Andrey Marakulin",
+  "author": "Ekaterina Kruglova",
   "description": "This schema is computer-readable file for understand how to: prepare data, load P10 elements classes and use threshold for tensorflow .h5 model",
   "createdate": {
-    "datetime": "16-11-2020 02:55",
-    "date": "16-11-2020"
+    "datetime": "12-04-2022 02:55",
+    "date": "12-04-2022"
   },
-  "modelname": "model_2020-11-16-0255",
+  "modelname": "model_2022-04-12-0255",
   "preparingcode": {
     "start_mode": "cut32_bw",
     "end_mode": "end_normal",

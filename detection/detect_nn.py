@@ -4,6 +4,7 @@ import time
 
 import cv2
 import numpy as np
+import torch
 import tensorflow as tf
 
 
@@ -46,7 +47,7 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
         (center_x, center_y, unknown_data, class_by_mathTemplate, matchTemplate_Probability)
     """
     t = Stamp()
-    model_path = os.path.join(model_info["path"], model_info["modelname"]) + ".h5"   # TODO: To torch
+    model_path = os.path.join(model_info["path"], model_info["modelname"]) + ".h5"
     start_mode = model_info["preparingcode"]["start_mode"]
     end_mode = model_info["preparingcode"]["end_mode"]
     # classes = model_info["classes"]  # flake
@@ -73,6 +74,11 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
         specified_hyp = sorted(specified_hyp, key=lambda tup: tup[5], reverse=True)
         specified_hyp = specified_hyp[:150]
 
+    logging.debug(f"--> Loading model {str(model_path)}...")
+    model = torch.load(model_path)
+    model.eval()
+    logging.debug(f"Model {str(model_path)} loaded.")
+    t.count("loading model")
     # ==== Run some code by start_mode
     logging.info("Preparing images for recognize...")
     if start_mode == "cut_normal":
@@ -90,17 +96,12 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
         return []
     t.count("Preparing images")
     # ==== Do magic
-    logging.debug(f"--> Loading model {str(model_path)}...")
-    model = tf.keras.models.load_model(model_path)  # TODO: To torch
-    logging.debug(f"Model {str(model_path)} loaded.")
-    t.count("loading model")
-
     logging.info("Predicting...")
     total_batches = int(len(candidates_img) / 32)
     try:
-        predict_arr = model.predict(candidates_img, batch_size=32)   # TODO: To torch predict Softmax
+        predict_arr = model(candidates_img)
     except ZeroDivisionError:
-        predict_arr = model.predict(candidates_img)   # TODO: predict_arr: (samples, probabilities)
+        predict_arr = model.predict(candidates_img)
     del model
     # logger.progressSignal_find4.emit(60)
     logging.info("Predict done.")
@@ -190,7 +191,7 @@ def end_normal(det, threshold, predict_arr, candidates, classes_groups, t):
     # for i, cl in enumerate(classes):
     #     nn_classes_ext[i + 1] = extended_classes(det, cl)
     # print(predict_arr)
-    for i, prob_arr in enumerate(predict_arr):  # TODO: prob_arr --
+    for i, prob_arr in enumerate(predict_arr):
         candidate_class = candidates[i][2]
         actual_class, prob = find_class_id(prob_arr, classes_groups, candidate_class)
         if (prob > threshold) and (actual_class is not None):
