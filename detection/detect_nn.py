@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import torch
 import tensorflow as tf
-
+from utilities.nn_train import New_Model
 
 # from sklearn.mixture import GaussianMixture
 # logging.getLogger("tensorflow").disabled = True
@@ -75,6 +75,7 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
         specified_hyp = specified_hyp[:150]
 
     logging.debug(f"--> Loading model {str(model_path)}...")
+    model = New_Model()
     model = torch.load(model_path)
     model.eval()
     logging.debug(f"Model {str(model_path)} loaded.")
