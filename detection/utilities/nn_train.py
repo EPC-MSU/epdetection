@@ -8,20 +8,28 @@ Original file is located at
 """
 
 from torch.utils.data import DataLoader
-from torchvision.datasets import VisionDataset
-import torch
 from torch.utils.data import Dataset
+import torchvision
 from torchvision import transforms
 from torchvision.transforms import ToTensor,Resize, Grayscale, Normalize
 import matplotlib.pyplot as plt
-import zipfile 
-import numpy as np 
-import matplotlib.pyplot as plt 
-import os
+import zipfile
+import numpy as np
+import matplotlib.pyplot as plt
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
+import os
+#import pandas as pd
+#from torchvision.io import read_image
+from torch.utils.data import Dataset
+#from torchvision import datasets
+#import glob
+import cv2
+import torch
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+"""
 from google.colab import drive
 drive.mount('/content/gdrive')
 
@@ -35,8 +43,167 @@ print(os.listdir())
 root_dir = "base_v2.1"
 train_data = VisionDataset(root = os.path.join(root_dir,'train_x1'),
                          transform= transforms)
+"""
 
-CLASSES_PATHS = {
+
+
+
+class My_class(Dataset):
+    def __init__(self,  classes_paths, transforms=None, target_transform=None):
+        #print(glob.glob(data_dir))
+        self.classes = []
+        self.images = []
+        self.transform = transforms
+        for actual_class in classes_paths:
+            if actual_class == 1:
+                print("")
+            paths = classes_paths[actual_class]
+            for path in paths:
+                print("Loading " + path)
+                for top, dirs, files in os.walk(path):
+                    for i, name in enumerate(files):
+                        if not os.path.isfile(top + "//" + name):
+                            continue
+                        try:
+                            imag = cv2.imread(top + "//" + name)
+                        except Exception:
+                            continue
+                        self.images.append(imag)
+                        self.classes.append(actual_class)
+        self.images, self.classes = np.array(self.images), np.array(self.classes)
+
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        if self.transform==None:
+           return self.images[idx], self.classes[idx]
+        else:
+           return self.transform(np.array(self.images[idx]).astype(np.float32)), self.classes[idx]
+
+
+class New_Model(nn.Module):
+
+    def __init__(self):
+        super(New_Model, self).__init__()
+        self.model = nn.Sequential(
+         nn.Conv2d(1, 32, 3, padding = 1),
+         nn.ReLU(),
+         nn.Dropout(0.25),
+         nn.BatchNorm2d(32),
+         nn.Conv2d(32, 32, 3, padding = 1),
+         nn.ReLU(),
+         nn.Dropout(0.25),
+         nn.BatchNorm2d(32),
+         nn.MaxPool2d( (2, 2)),
+         nn.Conv2d(32, 64, 3, padding = 1),
+         nn.ReLU(),
+         nn.Dropout(0.25),
+         nn.BatchNorm2d(64),
+         nn.Conv2d(64, 64, 3, padding = 1),
+         nn.ReLU(),
+         nn.Dropout(0.25),
+         nn.BatchNorm2d(64),
+         nn.MaxPool2d( (2, 2)),
+         nn.Conv2d(64, 128, 3, padding = 1),
+         nn.ReLU(),
+         nn.Dropout(0.25),
+         nn.BatchNorm2d(128),
+         nn.MaxPool2d( (2, 2)),
+         nn.Conv2d(128, 128, 3, padding = 1),
+         nn.ReLU(),
+         nn.Dropout(0.25),
+         nn.BatchNorm2d(128),
+         nn.MaxPool2d( (2, 2)),
+         nn.Conv2d(128, 128, 3, padding = 1),
+         nn.ReLU(),
+         nn.Dropout(0.25),
+         nn.BatchNorm2d(128),
+         nn.MaxPool2d( (2, 2)),
+         nn.Flatten(1)
+        )
+
+
+        my_array = torch.ones(1, 1, 32, 32)
+        a = self.model(my_array)
+        print(a.size())
+        self.fc1 = nn.Linear(a.size()[1], 40)
+        self.r = nn.ReLU()
+        self.do = nn.Dropout(0.25)
+        self.fc2 = nn.Linear(40, 32)
+  #      self.sm = nn.Softmax()
+
+    def forward(self, x):
+      x = self.model(x)
+      x = self.fc1(x)
+      x = self.r(x)
+      x = self.do(x)
+      x = self.fc2(x)
+#      x = self.sm(x)
+      return x
+
+def validate(model,testloader):
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for images, labels in test_loader:
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    return correct / total
+
+def test(model, loss_function, epochs , tag = "detection"):
+  correct = 0
+  total = 0
+  loss_test = []
+  for epoch in range(epochs):
+        ep_loss = 0
+        with torch.no_grad():
+            for data in test_loader:
+                images, labels = data
+          # calculate outputs by running images through the network
+                outputs = model(images)
+                loss = loss_function(outputs, labels)
+                ep_loss += loss.item()
+          # the class with the highest energy is what we choose as prediction
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+
+        loss_test.append(ep_loss /len(test_loader))
+        print(f"Epoch={epoch} loss={loss_test[epoch]:.4}")
+  print('Accuracy of the network on the 10000 test images: %d %%' % (
+      100 * correct / total))
+  return loss_test
+
+
+def train(model, loss_function,optimizer , epochs ):
+    loss_hist = []
+    test_accuracy = []
+    train_accuracy = []
+    for epoch in range(epochs):
+        ep_loss = 0
+        for images, labels in  tqdm(train_loader): # get bacth
+            optimizer.zero_grad() # sets the gradients of all optimized tensors to zero.
+            outputs = model.forward(images) # call forward inside
+            loss = loss_function(outputs, labels) # calculate loss
+            loss.backward() # calculate gradients
+            optimizer.step() # performs a single optimization step (parameter update).
+            ep_loss += loss.item()
+        loss_hist.append(ep_loss /len(train_loader))
+        print(f"Epoch={epoch} loss={loss_hist[epoch]:.4}")
+        test_accuracy.append(validate(model, test_loader))
+        train_accuracy.append(validate(model, train_loader))
+    return test_accuracy,train_accuracy, loss_hist
+
+
+
+
+def main():
+    CLASSES_PATHS = {
         0: ["base_v2.1//train_x1//2-SMD//incorrect",
             "base_v2.1//train_x1//SMA//incorrect",
             "base_v2.1//train_x1//SMB//incorrect",
@@ -94,211 +261,54 @@ CLASSES_PATHS = {
         30: ["base_v2.1//train_x1//LQFP0.65-%d&SSOP-%d//correct"],
         31: ["base_v2.1//train_x1//SOIC-%d//correct"]
     }
+    transforms = torchvision.transforms.Compose([ToTensor(), Grayscale(1), Resize([32, 32]), Normalize(mean=0, std=1)])
 
-import os
-import pandas as pd
-from torchvision.io import read_image
-import torch
-from torch.utils.data import Dataset
-from torchvision import datasets
-import glob
-import cv2
+    dataset = My_class(CLASSES_PATHS, transforms)
+    param = 0.9
+    dataset_train, dataset_test = torch.utils.data.random_split(dataset, [int(len(dataset) * param),
+                                                                          len(dataset) - int(len(dataset) * param)])
+    train_loader = DataLoader(dataset_train, batch_size=32, shuffle=True)
+    test_loader = DataLoader(dataset_test, batch_size=32, shuffle=True)
 
-class My_class(Dataset):
-    def __init__(self,  classes_paths, transforms=None, target_transform=None):
-        #print(glob.glob(data_dir))
-        self.classes = []
-        self.images = []
-        self.transform = transforms
-        for actual_class in classes_paths:
-            if actual_class == 1:
-                print("")
-            paths = classes_paths[actual_class]
-            for path in paths:
-                print("Loading " + path)
-                for top, dirs, files in os.walk(path):
-                    for i, name in enumerate(files):
-                        if not os.path.isfile(top + "//" + name):
-                            continue
-                        try:
-                            imag = cv2.imread(top + "//" + name)
-                        except Exception:
-                            continue
-                        self.images.append(imag)
-                        self.classes.append(actual_class)
-        self.images, self.classes = np.array(self.images), np.array(self.classes)       
-   
+    next(iter(dataset_train))
 
-    def __len__(self):
-        return len(self.images)
+    train_features, train_labels = next(iter(train_loader))
+    print(f"Feature batch shape: {train_features.size()}")
+    print(f"Labels batch shape: {train_labels.size()}")
+    img = train_features[0].squeeze()
+    label = train_labels[0]
+    plt.imshow(img, cmap="gray")
+    plt.show()
+    print(f"Label: {label}")
 
-    def __getitem__(self, idx):
-        if self.transform==None:
-           return self.images[idx], self.classes[idx]
-        else:
-           return self.transform(np.array(self.images[idx]).astype(np.float32)), self.classes[idx]
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Using device:', device)
+    model = New_Model()  # Create model instance
+    optimizer = optim.Adam(model.parameters())
+    test_accuracy, train_accuracy, loss_hist = train(model, nn.CrossEntropyLoss().cuda(), optimizer, epochs=30)
 
-transforms = transforms.Compose([ToTensor(), Grayscale(1), Resize([32,32]), Normalize(mean = 0, std = 1)])
+    torch.save(model.state_dict(), '/content/gdrive/MyDrive/05_04_22.h5')
+    torch.save(model, '/content/gdrive/MyDrive/05_04_22_full.h5')
 
-dataset = My_class(CLASSES_PATHS, transforms)
-param = 0.9
-dataset_train, dataset_test = torch.utils.data.random_split(dataset, [int(len(dataset)*param), len(dataset)-int(len(dataset)*param)])
-train_loader = DataLoader(dataset_train, batch_size=32, shuffle= True)
-test_loader = DataLoader(dataset_test, batch_size=32, shuffle= True)
+    loss_test = test(model, nn.CrossEntropyLoss().cuda(), epochs=30)
 
-next(iter(dataset_train))
+    epochs = 30
 
-train_features, train_labels = next(iter(train_loader))
-print(f"Feature batch shape: {train_features.size()}")
-print(f"Labels batch shape: {train_labels.size()}")
-img = train_features[0].squeeze()
-label = train_labels[0]
-plt.imshow(img, cmap="gray")
-plt.show()
-print(f"Label: {label}")
+    plt.plot(range(epochs), train_accuracy, label='train accuracy')
+    plt.plot(range(epochs), test_accuracy, label='test accuracy')
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.ylim([0, 1])
+    plt.legend()
+    plt.show()
 
-class New_Model(nn.Module):
+    epochs = 30
+    plt.plot(range(epochs), loss_hist, label='train loss')
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.ylim([0, 1])
+    plt.legend()
+    plt.show()
 
-    def __init__(self):
-        super(New_Model, self).__init__()
-        self.model = nn.Sequential(
-         nn.Conv2d(1, 32, 3, padding = 1),
-         nn.ReLU(),  
-         nn.Dropout(0.25),
-         nn.BatchNorm2d(32),
-         nn.Conv2d(32, 32, 3, padding = 1),
-         nn.ReLU(),
-         nn.Dropout(0.25),
-         nn.BatchNorm2d(32),
-         nn.MaxPool2d( (2, 2)),
-         nn.Conv2d(32, 64, 3, padding = 1),
-         nn.ReLU(),
-         nn.Dropout(0.25),
-         nn.BatchNorm2d(64),
-         nn.Conv2d(64, 64, 3, padding = 1),
-         nn.ReLU(),
-         nn.Dropout(0.25),
-         nn.BatchNorm2d(64),
-         nn.MaxPool2d( (2, 2)),
-         nn.Conv2d(64, 128, 3, padding = 1),
-         nn.ReLU(),
-         nn.Dropout(0.25),
-         nn.BatchNorm2d(128),
-         nn.MaxPool2d( (2, 2)),
-         nn.Conv2d(128, 128, 3, padding = 1),
-         nn.ReLU(),
-         nn.Dropout(0.25),
-         nn.BatchNorm2d(128),
-         nn.MaxPool2d( (2, 2)),
-         nn.Conv2d(128, 128, 3, padding = 1),
-         nn.ReLU(),
-         nn.Dropout(0.25),
-         nn.BatchNorm2d(128),
-         nn.MaxPool2d( (2, 2)),
-         nn.Flatten(1)
-        )
-    
-       
-        my_array = torch.ones(1, 1, 32, 32)
-        a = self.model(my_array)
-        print(a.size())   
-        self.fc1 = nn.Linear(a.size()[1], 40) 
-        self.r = nn.ReLU()
-        self.do = nn.Dropout(0.25)
-        self.fc2 = nn.Linear(40, 32)
-  #      self.sm = nn.Softmax()
-
-    def forward(self, x):
-      x = self.model(x)
-      x = self.fc1(x)
-      x = self.r(x)
-      x = self.do(x)
-      x = self.fc2(x)
-#      x = self.sm(x)
-      return x
-
-def validate(model,testloader):
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for images, labels in test_loader:
-            outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-
-    return correct / total
-
-def test(model, loss_function, epochs , tag = "detection"):
-  correct = 0
-  total = 0
-  loss_test = []
-  for epoch in range(epochs):
-        ep_loss = 0
-        with torch.no_grad():
-            for data in test_loader:
-                images, labels = data
-          # calculate outputs by running images through the network
-                outputs = model(images)
-                loss = loss_function(outputs, labels)
-                ep_loss += loss.item()
-          # the class with the highest energy is what we choose as prediction
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-                
-        loss_test.append(ep_loss /len(test_loader))
-        print(f"Epoch={epoch} loss={loss_test[epoch]:.4}")
-  print('Accuracy of the network on the 10000 test images: %d %%' % (
-      100 * correct / total))
-  return loss_test
-
-import torch
-from tqdm import tqdm
-def train(model, loss_function,optimizer , epochs ):
-    loss_hist = []
-    test_accuracy = []
-    train_accuracy = []
-    for epoch in range(epochs):
-        ep_loss = 0
-        for images, labels in  tqdm(train_loader): # get bacth         
-            optimizer.zero_grad() # sets the gradients of all optimized tensors to zero.
-            outputs = model.forward(images) # call forward inside 
-            loss = loss_function(outputs, labels) # calculate loss
-            loss.backward() # calculate gradients
-            optimizer.step() # performs a single optimization step (parameter update).
-            ep_loss += loss.item()
-        loss_hist.append(ep_loss /len(train_loader))
-        print(f"Epoch={epoch} loss={loss_hist[epoch]:.4}")
-        test_accuracy.append(validate(model, test_loader))
-        train_accuracy.append(validate(model, train_loader))
-    return test_accuracy,train_accuracy, loss_hist
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('Using device:', device)
-model = New_Model()  # Create model instance
-optimizer = optim.Adam(model.parameters())
-test_accuracy,train_accuracy, loss_hist = train(model,  nn.CrossEntropyLoss().cuda(), optimizer, epochs = 30)
-
-torch.save(model.state_dict(), '/content/gdrive/MyDrive/05_04_22.h5' )
-torch.save(model, '/content/gdrive/MyDrive/05_04_22_full.h5')
-
-loss_test = test(model, nn.CrossEntropyLoss().cuda(), epochs = 30)
-
-epochs = 30
-import matplotlib.pyplot as plt
-plt.plot(range(epochs), train_accuracy, label = 'train accuracy')
-plt.plot(range(epochs), test_accuracy, label = 'test accuracy')
-plt.xlabel("Epochs")
-plt.ylabel("Loss")
-plt.ylim([0, 1])
-plt.legend()
-plt.show()
-
-epochs = 30
-plt.plot(range(epochs), loss_hist, label = 'train loss')
-plt.xlabel("Epochs")
-plt.ylabel("Loss")
-plt.ylim([0, 1])
-plt.legend()
-plt.show()
+if __name__ == "__main__":
+    main()
