@@ -1,7 +1,7 @@
 {
   "title": "Neural network model description format for P10",
   "author": "Ekaterina Kruglova",
-  "description": "This schema is computer-readable file for understand how to: prepare data, load P10 elements classes and use threshold for tensorflow .h5 model",
+  "description": "This schema is computer-readable file for understand how to: prepare data, load P10 elements classes and use threshold for PyTorch model",
   "createdate": {
     "datetime": "12-04-2022 02:55",
     "date": "12-04-2022"

@@ -7,13 +7,13 @@ import json
 class ModelInfo:
     def __init__(self):
         """
-        This class format collect full information about tensorflow model for P10
-        Recommended variable name for this class: model_info
+        This class format collect full information about PyTorch for P10
+        Recommended name for this class instance: model_info
         """
         super(ModelInfo, self).__init__()
         self.title = "Neural network model description format for P10"
         self.description = "This schema is computer-readable file for understand how to: prepare data," \
-                           " load P10 elements classes and use threshold for tensorflow .h5 model"
+                           " load P10 elements classes and use threshold for PyTorch model"
         self.author = "Andrey Marakulin"
         self.start_mode = "cut32_bw"
         self.end_mode = "end_normal"
@@ -111,7 +111,7 @@ class ModelInfo:
         if isinstance(architecture, str):
             self.architecture = architecture
         else:
-            raise TypeError("Tensorflow model json architecture must be string")
+            raise TypeError("PyTorch model json architecture must be string")
 
     def set_architecture_from_file(self, path):
         with open(path) as f:
@@ -119,7 +119,7 @@ class ModelInfo:
         if isinstance(architecture, str):
             self.architecture = architecture
         else:
-            raise TypeError("Tensorflow model json architecture must be string")
+            raise TypeError("PyTorch model json architecture must be string")
 
     def compile_info(self):
         schema = dict()

@@ -5,24 +5,9 @@ import time
 import cv2
 import numpy as np
 import torch
-import tensorflow as tf
 from detection.utilities.nn_train import New_Model
 import torchvision
 from torchvision.transforms import ToTensor,Resize, Grayscale, Normalize
-
-# from sklearn.mixture import GaussianMixture
-# logging.getLogger("tensorflow").disabled = True
-# os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-
-# class PredictCallback(tf.keras.callbacks.Callback):
-#     def __init__(self, logger, total_batches):
-#         super().__init__()
-#         self.logger = logger
-#         self.total_batches = total_batches
-#
-#     def on_predict_batch_end(self, batch, logs=None):
-#         self.logger.progressSignal_find4.emit(30 + int(30 * batch / self.total_batches))
 
 
 class Stamp:
