@@ -86,16 +86,17 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
     # ==== Do magic
     logging.info("Predicting...")
     total_batches = int(len(candidates_img) / 32)
-    try:
-        predict_arr = model(candidates_img)
-        m = torch.nn.Softmax()
-        predict_arr = m(predict_arr)
-        predict_arr = predict_arr.detach().numpy()
-    except ZeroDivisionError:
-        predict_arr = model(candidates_img)
-        m = torch.nn.Softmax()
-        predict_arr = m(predict_arr)
-        predict_arr = predict_arr.detach().numpy()
+    # try:
+    predict_arr = model(candidates_img)
+    m = torch.nn.Softmax(dim=1)
+    predict_arr = m(predict_arr)
+    predict_arr = predict_arr.detach().numpy()
+    print(predict_arr)
+    # except ZeroDivisionError:
+    #     predict_arr = model(candidates_img)
+    #     m = torch.nn.Softmax(dim=1)
+    #     predict_arr = m(predict_arr)
+    #     predict_arr = predict_arr.detach().numpy()
     del model
     # logger.progressSignal_find4.emit(60)
     logging.info("Predict done.")
