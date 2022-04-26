@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from detection.utilities.nn_train import New_Model
 import torchvision
-from torchvision.transforms import ToTensor,Resize, Grayscale, Normalize
+from torchvision.transforms import ToTensor, Resize, Grayscale, Normalize
 
 
 class Stamp:
@@ -104,12 +104,15 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
     # ==== Run some code by end_mode
     logging.info("Ending...")
     if end_mode == "end_normal":
-        # threshold = det.trh_prob
+        threshold = det.trh_prob
         # if find_one:
-        threshold = 0  # TODO: Fix threshold
+        # threshold = 0  # TODO: Fix threshold
+        print(threshold)
         result = end_normal(det, threshold, predict_arr, candidates, classes_groups, t)
     elif end_mode == "end_thd":
+        logging.info("end_thd:" + str(det.trh_prob))
         threshold = define_threshold(det.trh_prob, data)
+        logging.info("threshold:" + str(det.trh_prob))
         if find_one:
             threshold = 0
         result = end_normal(det, threshold, predict_arr, candidates, classes_groups, t)
@@ -138,13 +141,13 @@ def cut_rotate_and_normalize(det, jpg_image, specified_hyp, x32=False, bw=False)
     candidates_img = torch.Tensor([])
     if x32:
         transforms = torchvision.transforms.Compose(
-                [ToTensor(), Resize([32, 32]), Normalize(mean=0, std=1)])
+            [ToTensor(), Resize([32, 32]), Normalize(mean=0, std=1)])
     if bw:
         transforms = torchvision.transforms.Compose(
-                [ToTensor(), Grayscale(1), Normalize(mean=0, std=1)])
+            [ToTensor(), Grayscale(1), Normalize(mean=0, std=1)])
     if x32 and bw:
         transforms = torchvision.transforms.Compose(
-                [ToTensor(), Grayscale(1), Resize([32, 32]), Normalize(mean=0, std=1)])
+            [ToTensor(), Grayscale(1), Resize([32, 32]), Normalize(mean=0, std=1)])
     for i, (cy, cx, _, _, c, p) in enumerate(specified_hyp):
         x1 = int(cx - det.patterns[c].shape[1] / 2)  # Top left x
         y1 = int(cy - det.patterns[c].shape[0] / 2)  # Top left y
@@ -153,27 +156,26 @@ def cut_rotate_and_normalize(det, jpg_image, specified_hyp, x32=False, bw=False)
         patch = jpg_image[y1:y2, x1:x2]
         patch_rotated = np.rot90(patch, det.pat_rotations[c])
 
+        #       if x32:
+        #           patch_rotated = cv2.resize(patch_rotated, (32, 32), interpolation=cv2.INTER_AREA)
 
- #       if x32:
- #           patch_rotated = cv2.resize(patch_rotated, (32, 32), interpolation=cv2.INTER_AREA)
-
-  #      if bw:
-  #          patch_rotated = cv2.cvtColor(patch_rotated, cv2.COLOR_BGR2GRAY)
+        #      if bw:
+        #          patch_rotated = cv2.cvtColor(patch_rotated, cv2.COLOR_BGR2GRAY)
         patch_rotated = transforms(patch_rotated)
         patch_rotated = patch_rotated.unsqueeze(0)
         candidates_img = torch.cat((candidates_img, patch_rotated), 0)
         candidates.append((y1, x1, c, p))
         # logger.progressSignal_find4.emit(int(30 * i / len(specified_hyp)))
     logging.debug(f"Candidates: {len(candidates_img)}")
-  #  if bw:
-  #      candidates_img = candidates_img[..., tf.newaxis]
+    #  if bw:
+    #      candidates_img = candidates_img[..., tf.newaxis]
     # logger.progressSignal_find4.emit(30)
     return candidates, candidates_img
 
 
 def define_threshold(det_thd_prob, data_thd):
     if data_thd is None:
-        logging.debug(f"Threshold for this model not found. Use user value: {det_thd_prob}")
+        logging.error(f"Threshold for this model not found. Use user value: {det_thd_prob}")
         return det_thd_prob
     else:
         try:
@@ -199,6 +201,7 @@ def end_normal(det, threshold, predict_arr, candidates, classes_groups, t):
     for i, prob_arr in enumerate(predict_arr):
         candidate_class = candidates[i][2]
         actual_class, prob = find_class_id(prob_arr, classes_groups, candidate_class)
+        # print(prob)
         if (prob > threshold) and (actual_class is not None):
             result.append((candidates[i][0], candidates[i][1], actual_class, prob))
 

@@ -47,7 +47,7 @@ if __name__ == "__main__":
         os.makedirs(os.path.join("log", "main"))
     cv2.imwrite(os.path.join("log", "main", "in_image.png"), img)
 
-    result = detect_elements(gc, img, trh_corr_mult=cliargs.trh_corr_mult)
+    result = detect_elements(gc, img, trh_prob=float(cliargs.trh_prob), trh_corr_mult=cliargs.trh_corr_mult)
 
     logging.info("-" * 40)
     logging.info("Detected elements:")
