@@ -84,7 +84,6 @@ class My_class(Dataset):
 
 
 class New_Model(nn.Module):
-
     def __init__(self):
         super(New_Model, self).__init__()
         self.model = nn.Sequential(
