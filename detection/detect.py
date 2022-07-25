@@ -294,8 +294,9 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
         max_corr = 0
         for k, cluster_id in enumerate(det.clusters):
             cur_corr = -1.
-            if cluster_id == det.clusters[c] and det.patterns[k] is not None and \
-                det.patterns[k].shape == det.patterns[v[4]].shape and det.pat_rotations[k] == det.pat_rotations[v[4]]:
+            assert_p_shape = det.patterns[k].shape == det.patterns[v[4]].shape
+            assert_p_rot = det.pat_rotations[k] == det.pat_rotations[v[4]]
+            if cluster_id == det.clusters[c] and det.patterns[k] is not None and assert_p_shape and assert_p_rot:
                 cur_corr = matchTemplate(patch, det.patterns[k], TM_CCOEFF_NORMED)[0][0]
             if cur_corr > max_corr:
                 c = k
@@ -773,7 +774,7 @@ def _detect_by_nn(gc, image, det, find_rotations=False, only_pat_ids=None, debug
     schema_path = None
     for file in os.listdir(model_path):
         print(file)
-        if file.startswith("model") and file.endswith("schema.json"):
+        if file.startswith("model") and file.endswith(".pth.json"):
             schema_path = os.path.join(model_path, file)
             break
     with open(schema_path) as data_file:

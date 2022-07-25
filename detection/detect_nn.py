@@ -37,7 +37,6 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
     classes_groups = model_info["classes_groups"]
     classes_groups_list = model_info["classes_groups_list"]
 
-
     cv2.imwrite(os.path.join("log", "scanzone.jpg"), rgb_image, [cv2.IMWRITE_JPEG_QUALITY, 80])
     jpg_image = cv2.imread(os.path.join("log", "scanzone.jpg"))
     t.count("save jpg")

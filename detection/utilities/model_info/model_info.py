@@ -141,9 +141,9 @@ class ModelInfo:
         else:
             schema = self.get_info()
             name = custom_name if custom_name is not None else schema["modelname"]
-            with open(os.path.join(patch, name + ".schema.json"), "w") as f:
+            with open(os.path.join(patch, name + ".json"), "w") as f:
                 json.dump(schema, f, indent=4)
-                print('Info saved in: ', os.path.join(patch, name + ".schema.json"))
+                print('Info saved in: ', os.path.join(patch, name + ".json"))
 
 
 if __name__ == "__main__":
