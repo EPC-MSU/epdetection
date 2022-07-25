@@ -5,7 +5,7 @@ import time
 import cv2
 import numpy as np
 import torch
-from detection.utilities.nn_train import CNN
+from detection.utilities.model import CNN
 import torchvision
 from torchvision.transforms import ToTensor, Resize, Grayscale, Normalize
 
@@ -85,18 +85,12 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
     t.count("Preparing images")
     # ==== Do magic
     logging.info("Predicting...")
-    total_batches = int(len(candidates_img) / 32)
-    # try:
+
     predict_arr = model(candidates_img)
-    m = torch.nn.Softmax(dim=1)
-    predict_arr = m(predict_arr)
+    sm = torch.nn.Softmax(dim=1)
+    predict_arr = sm(predict_arr)
     predict_arr = predict_arr.detach().numpy()
     print(predict_arr)
-    # except ZeroDivisionError:
-    #     predict_arr = model(candidates_img)
-    #     m = torch.nn.Softmax(dim=1)
-    #     predict_arr = m(predict_arr)
-    #     predict_arr = predict_arr.detach().numpy()
     del model
     # logger.progressSignal_find4.emit(60)
     logging.info("Predict done.")
