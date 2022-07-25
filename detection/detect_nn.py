@@ -5,9 +5,7 @@ import time
 import cv2
 import numpy as np
 import torch
-from detection.utilities.model import CNN
-import torchvision
-from torchvision.transforms import ToTensor, Resize, Grayscale, Normalize
+from detection.utilities.model import CNN, transforms
 
 
 class Stamp:
@@ -69,19 +67,9 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
     t.count("loading model")
     # ==== Run some code by start_mode
     logging.info("Preparing images for recognize...")
-    if start_mode == "cut_normal":
-        candidates, candidates_img = cut_rotate_and_normalize(det, jpg_image, specified_hyp)
-        logging.info(f"Candidates found: {len(candidates)}")
-    elif start_mode == "cut32":
-        candidates, candidates_img = cut_rotate_and_normalize(det, jpg_image, specified_hyp, x32=True)
-        logging.info(f"Candidates found: {len(candidates)}")
-    elif start_mode == "cut32_bw":
-        candidates, candidates_img = cut_rotate_and_normalize(det, jpg_image, specified_hyp, x32=True,
-                                                              bw=True)
-        logging.info(f"Candidates found: {len(candidates)}")
-    else:
-        logging.debug("Start mode unrecognized. Model skipped.")
-        return []
+    candidates, candidates_img = apply_transforms(det, jpg_image, specified_hyp)
+    logging.info(f"Candidates found: {len(candidates)}")
+
     t.count("Preparing images")
     # ==== Do magic
     logging.info("Predicting...")
@@ -127,22 +115,13 @@ def extended_classes(det, cl_id):
     return same_classes
 
 
-def cut_rotate_and_normalize(det, jpg_image, specified_hyp, x32=False, bw=False):
+def apply_transforms(det, jpg_image, specified_hyp):
     """
     return:
     (candidates, candidates_img)
     """
     candidates = []
     candidates_img = torch.Tensor([])
-    if x32:
-        transforms = torchvision.transforms.Compose(
-            [ToTensor(), Resize([32, 32]), Normalize(mean=0, std=1)])
-    if bw:
-        transforms = torchvision.transforms.Compose(
-            [ToTensor(), Grayscale(1), Normalize(mean=0, std=1)])
-    if x32 and bw:
-        transforms = torchvision.transforms.Compose(
-            [ToTensor(), Grayscale(1), Resize([32, 32]), Normalize(mean=0, std=1)])
     for i, (cy, cx, _, _, c, p) in enumerate(specified_hyp):
         x1 = int(cx - det.patterns[c].shape[1] / 2)  # Top left x
         y1 = int(cy - det.patterns[c].shape[0] / 2)  # Top left y
@@ -151,12 +130,8 @@ def cut_rotate_and_normalize(det, jpg_image, specified_hyp, x32=False, bw=False)
         patch = jpg_image[y1:y2, x1:x2]
         patch_rotated = np.rot90(patch, det.pat_rotations[c])
 
-        #       if x32:
-        #           patch_rotated = cv2.resize(patch_rotated, (32, 32), interpolation=cv2.INTER_AREA)
-
-        #      if bw:
-        #          patch_rotated = cv2.cvtColor(patch_rotated, cv2.COLOR_BGR2GRAY)
         patch_rotated = transforms(patch_rotated)
+
         patch_rotated = patch_rotated.unsqueeze(0)
         candidates_img = torch.cat((candidates_img, patch_rotated), 0)
         candidates.append((y1, x1, c, p))

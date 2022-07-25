@@ -1,5 +1,13 @@
 import torch
 import torch.nn as nn
+import torchvision
+from torchvision.transforms import ToTensor, Resize, Grayscale, Normalize
+
+
+transforms = torchvision.transforms.Compose([ToTensor(),
+                                             Grayscale(1),
+                                             Resize([32, 32]),
+                                             Normalize(mean=0, std=1)])
 
 
 class ConvBlock(nn.Module):
