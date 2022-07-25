@@ -33,15 +33,11 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
     """
     t = Stamp()
     model_path = os.path.join(model_info["path"], model_info["modelname"])
-    start_mode = model_info["preparingcode"]["start_mode"]
-    end_mode = model_info["preparingcode"]["end_mode"]
     # classes = model_info["classes"]  # flake
-    data = model_info["preparingcode"]["additional"]
     classes_groups = model_info["classes_groups"]
     classes_groups_list = model_info["classes_groups_list"]
 
-    # model_path, mode, classes, classes_extended = model_info
-    # start_mode, end_mode, data = mode
+
     cv2.imwrite(os.path.join("log", "scanzone.jpg"), rgb_image, [cv2.IMWRITE_JPEG_QUALITY, 80])
     jpg_image = cv2.imread(os.path.join("log", "scanzone.jpg"))
     t.count("save jpg")
@@ -86,22 +82,11 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
 
     # ==== Run some code by end_mode
     logging.info("Ending...")
-    if end_mode == "end_normal":
-        threshold = det.trh_prob
-        # if find_one:
+    threshold = 0  # TODO: This is a crutch, fix it
+    # threshold = det.trh_prob
+    if find_one:
         threshold = 0  # TODO: Fix threshold
-        # print(threshold)
-        result = end_normal(det, threshold, predict_arr, candidates, classes_groups, t)
-    elif end_mode == "end_thd":
-        logging.info("end_thd:" + str(det.trh_prob))
-        threshold = define_threshold(det.trh_prob, data)
-        logging.info("threshold:" + str(det.trh_prob))
-        if find_one:
-            threshold = 0
-        result = end_normal(det, threshold, predict_arr, candidates, classes_groups, t)
-    else:
-        logging.debug("End mode unrecognized. Model skipped.")
-        return []
+    result = end_normal(det, threshold, predict_arr, candidates, classes_groups, t)
     return result
 
 
@@ -141,24 +126,6 @@ def apply_transforms(det, jpg_image, specified_hyp):
     #      candidates_img = candidates_img[..., tf.newaxis]
     # logger.progressSignal_find4.emit(30)
     return candidates, candidates_img
-
-
-def define_threshold(det_thd_prob, data_thd):
-    if data_thd is None:
-        logging.error(f"Threshold for this model not found. Use user value: {det_thd_prob}")
-        return det_thd_prob
-    else:
-        try:
-            thd = float(data_thd)
-            if det_thd_prob >= 0.5:
-                new_thd = thd + (1 - thd) / 0.5 * (det_thd_prob - 0.5)
-            else:
-                new_thd = thd / 0.5 * det_thd_prob
-            logging.debug(f"Redefined threshold according to user threshold: {new_thd}")
-            return new_thd
-        except Exception as err:
-            logging.error(f"{err} Use user value: {det_thd_prob}")
-            return det_thd_prob
 
 
 def end_normal(det, threshold, predict_arr, candidates, classes_groups, t):

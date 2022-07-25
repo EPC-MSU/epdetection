@@ -5,7 +5,7 @@ import json
 
 
 class ModelInfo:
-    def __init__(self):
+    def __init__(self, author="Andrey Marakulin", compatible_det_info_json=None):
         """
         This class format collect full information about PyTorch for P10
         Recommended name for this class instance: model_info
@@ -14,17 +14,14 @@ class ModelInfo:
         self.title = "Neural network model description format for P10"
         self.description = "This schema is computer-readable file for understand how to: prepare data," \
                            " load P10 elements classes and use threshold for PyTorch model"
-        self.author = "Andrey Marakulin"
-        self.start_mode = "cut32_bw"
-        self.end_mode = "end_normal"
+        self.author = author
         self.model_classes = [21, 22, 23, 26, 24, 27, 29, 32, 31, 30, 17, 15, 16, 18, 19, 20, 8,
                               10, 13, 5, 9, 12, 11, 7, 14, 33, 34, 35, 36, 37, 38]
 
-        self.additional = None
         self.schema = None
+        self.compatible_det_info_json = compatible_det_info_json
         self.custom_name = None
         self.friendly_name = None
-        self.augmentation = None
         self.train_params = None
         self.architecture = None
 
@@ -79,27 +76,11 @@ class ModelInfo:
             nn_classes_ext[i + 1] = self.extended_classes(names, cl)
         return nn_classes_ext
 
-    def set_info(self, author=None, start_mode=None, end_mode=None, model_classes=None, additional=None):
-        self.author = author if author is not None else self.author
-        self.start_mode = start_mode if start_mode is not None else self.start_mode
-        self.end_mode = end_mode if end_mode is not None else self.end_mode
-        self.model_classes = model_classes if model_classes is not None else self.model_classes
-        self.additional = additional if additional is not None else self.additional
-
     def set_author(self, author):
         self.author = author
 
-    def set_start_mode(self, start_mode):
-        self.start_mode = start_mode
-
-    def set_end_mode(self, end_mode):
-        self.end_mode = end_mode
-
     def set_classes(self, model_classes):
         self.model_classes = model_classes
-
-    def set_additional(self, additional):
-        self.additional = additional
 
     def set_custom_name(self, custom_name):
         self.custom_name = custom_name
@@ -129,15 +110,16 @@ class ModelInfo:
         schema["createdate"] = {"datetime": self.datetime_to_str(), "date": self.datetime_to_datestr()}
         schema["modelname"] = self.custom_name if self.custom_name is not None \
             else "model_" + self.datetime_to_modelname() + '.pth'
-        schema["preparingcode"] = {"start_mode": self.start_mode, "end_mode": self.end_mode,
-                                   "additional": self.additional}
 
-        try:
-            with open("compatible_det_info.json") as f:
-                schema["compatible_det_info"] = json.load(f)
-        except FileNotFoundError:
-            raise FileNotFoundError("compatible_det_info not found. How to create"
-                                    " it see in create_compatible_det_info function.")
+        if self.compatible_det_info_json is None:
+            try:
+                with open("compatible_det_info.json") as f:
+                    schema["compatible_det_info"] = json.load(f)
+            except FileNotFoundError:
+                raise FileNotFoundError("compatible_det_info not found. How to create"
+                                        " it see in create_compatible_det_info function.")
+        else:
+            schema["compatible_det_info"] = self.compatible_det_info_json
 
         schema["classes"] = self.model_classes
         schema["classes_groups"] = self.generate_classes_groups(schema["compatible_det_info"]["names"],
@@ -165,7 +147,7 @@ class ModelInfo:
 
 
 if __name__ == "__main__":
-    model_info = ModelInfo()
+    model_info = ModelInfo("Andrey Marakulin")
     model_info.compile_info()
     model_info.save_info()
     # print(json.dumps(model_info.get_info(), indent=4, sort_keys=True))

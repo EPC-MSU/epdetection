@@ -3,15 +3,10 @@
     "author": "Andrey Marakulin",
     "description": "This schema is computer-readable file for understand how to: prepare data, load P10 elements classes and use threshold for PyTorch model",
     "createdate": {
-        "datetime": "25-07-2022 11:05",
+        "datetime": "25-07-2022 13:29",
         "date": "25-07-2022"
     },
     "modelname": "model_2022-07-25.pth",
-    "preparingcode": {
-        "start_mode": "cut32_bw",
-        "end_mode": "end_normal",
-        "additional": null
-    },
     "compatible_det_info": {
         "names": [
             "not elem",

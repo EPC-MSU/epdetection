@@ -295,8 +295,7 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
         for k, cluster_id in enumerate(det.clusters):
             cur_corr = -1.
             if cluster_id == det.clusters[c] and det.patterns[k] is not None and \
-                det.patterns[k].shape == det.patterns[v[4]].shape and \
-                det.pat_rotations[k] == det.pat_rotations[v[4]]:
+                det.patterns[k].shape == det.patterns[v[4]].shape and det.pat_rotations[k] == det.pat_rotations[v[4]]:
                 cur_corr = matchTemplate(patch, det.patterns[k], TM_CCOEFF_NORMED)[0][0]
             if cur_corr > max_corr:
                 c = k
@@ -383,8 +382,8 @@ def _closest_peak(p0, img, det, only_pat_id=None, trh_mult=0.7, debug_dir=None):
     det.trh_corr_mult *= trh_mult
     det.trh_prob *= trh_mult
     for v in _detect(FakeGuiConnector(), img, det, only_pat_ids=[only_pat_id], debug_dir=debug_dir):
-        if pos[0] == -1 or v[3] > prob + TRH_CLOSP or \
-            dist2((v[0], v[1]), p0) < dist2(pos, p0) and prob - v[3] < TRH_CLOSP:
+        dist_v_less = dist2((v[0], v[1]), p0) < dist2(pos, p0)
+        if pos[0] == -1 or v[3] > prob + TRH_CLOSP or dist_v_less and prob - v[3] < TRH_CLOSP:
             pos = v[0], v[1]
             prob = max(v[3], prob)
     det.trh_corr_mult, det.trh_prob = trh_old
@@ -604,8 +603,7 @@ def _detect_common_return_elements(debug_dir, det, elements, gc, image, only_pat
 
     for i, szk in enumerate(szk_list):
         det.patterns[0] = cv2.resize(orig_pat, (0, 0), fx=szk, fy=szk)
-        els = _detect_by_nn(gc, image, det, find_rotations=True, debug_dir=debug_dir,
-                           only_pat_ids=only_pat_ids)
+        els = _detect_by_nn(gc, image, det, find_rotations=True, debug_dir=debug_dir, only_pat_ids=only_pat_ids)
 
         val = np.sum(np.array(els)[:, -1] > 0.9) / len(els) if len(els) > 0 else 0.0
         sizes_els.append(els)
