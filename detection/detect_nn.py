@@ -5,7 +5,7 @@ import time
 import cv2
 import numpy as np
 import torch
-from detection.utilities.nn_train import New_Model
+from detection.utilities.nn_train import CNN
 import torchvision
 from torchvision.transforms import ToTensor, Resize, Grayscale, Normalize
 
@@ -34,7 +34,7 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
         (center_x, center_y, unknown_data, class_by_mathTemplate, matchTemplate_Probability)
     """
     t = Stamp()
-    model_path = os.path.join(model_info["path"], model_info["modelname"]) + ".h5"
+    model_path = os.path.join(model_info["path"], model_info["modelname"])
     start_mode = model_info["preparingcode"]["start_mode"]
     end_mode = model_info["preparingcode"]["end_mode"]
     # classes = model_info["classes"]  # flake
@@ -62,7 +62,7 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
         specified_hyp = specified_hyp[:150]
 
     logging.debug(f"--> Loading model {str(model_path)}...")
-    model = New_Model()
+    model = CNN()
     model.load_state_dict(torch.load(model_path))
     model.eval()
     logging.debug(f"Model {str(model_path)} loaded.")
@@ -107,8 +107,8 @@ def detect_by_one_model(rgb_image, det, model_info, non_overlap_hyp, find_one):
     if end_mode == "end_normal":
         threshold = det.trh_prob
         # if find_one:
-        # threshold = 0  # TODO: Fix threshold
-        print(threshold)
+        threshold = 0  # TODO: Fix threshold
+        # print(threshold)
         result = end_normal(det, threshold, predict_arr, candidates, classes_groups, t)
     elif end_mode == "end_thd":
         logging.info("end_thd:" + str(det.trh_prob))

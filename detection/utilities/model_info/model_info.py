@@ -41,7 +41,7 @@ class ModelInfo:
     def datetime_to_modelname(self, utc_shift_hours=3):
         delta = datetime.timedelta(hours=utc_shift_hours)  # MoscowUTC
         tzone = datetime.timezone(delta)
-        return datetime.datetime.strftime(datetime.datetime.now(tzone), "%Y-%m-%d-%H%M")
+        return datetime.datetime.strftime(datetime.datetime.now(tzone), "%Y-%m-%d")  # -%H-%M
 
     def create_compatible_det_info(self, det_dump_path="det_dump.json"):
         """
@@ -128,7 +128,7 @@ class ModelInfo:
         schema["description"] = self.description
         schema["createdate"] = {"datetime": self.datetime_to_str(), "date": self.datetime_to_datestr()}
         schema["modelname"] = self.custom_name if self.custom_name is not None \
-            else "model_" + self.datetime_to_modelname()
+            else "model_" + self.datetime_to_modelname() + '.pth'
         schema["preparingcode"] = {"start_mode": self.start_mode, "end_mode": self.end_mode,
                                    "additional": self.additional}
 
@@ -160,14 +160,12 @@ class ModelInfo:
             schema = self.get_info()
             name = custom_name if custom_name is not None else schema["modelname"]
             with open(os.path.join(patch, name + ".schema.json"), "w") as f:
-                json.dump(schema, f)
+                json.dump(schema, f, indent=4)
+                print('Info saved in: ', os.path.join(patch, name + ".schema.json"))
 
 
 if __name__ == "__main__":
     model_info = ModelInfo()
-    # model_info.set_info("Zap", "start_normal", "end_normal")
-    # model_info.set_architecture_from_file("C://Users//apmar//Desktop//NOISE_AUG_LONG_TRAIN//architecture.json")
     model_info.compile_info()
-    scheme = model_info.get_info()
-    # model_info.save_info()
-    print(json.dumps(scheme, indent=4, sort_keys=True))
+    model_info.save_info()
+    # print(json.dumps(model_info.get_info(), indent=4, sort_keys=True))
