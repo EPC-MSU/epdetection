@@ -12,8 +12,6 @@ max-line-length = 120
 exclude = 
           # Git internal folder`
           .git,
-          # Mercurial internal folder
-          .hg,
           # Python temporary files
           __pycache__,
           # External dependencies
