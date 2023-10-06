@@ -219,6 +219,46 @@ def _detect_all(gc, img, clf_path, trh_prob=0.7, trh_corr_mult=1.5,
     return elements
 
 
+def _classify(non_overlap, det, is_elem_class, im, debug_dir, image):
+    # clf
+    logging.debug("found %s non-overlapping patches", len(non_overlap))
+    logging.debug("classify")
+    result = []
+    for v in non_overlap:
+        i = v[0] - det.patterns[v[4]].shape[0] // 2
+        j = v[1] - det.patterns[v[4]].shape[1] // 2
+        pp, val_corr = v[6], v[5]
+        p_i = (pp * is_elem_class).argmax()
+        c = det.clf.classes_[p_i]
+        p_res = pp[p_i]
+        patch = im[i:i + det.patterns[v[4]].shape[0], j:j + det.patterns[v[4]].shape[1]]
+        assert patch.shape == det.patterns[v[4]].shape[:2]
+
+        max_corr = 0
+        for k, cluster_id in enumerate(det.clusters):
+            cur_corr = -1.
+            assert_p_shape = det.patterns[k].shape == det.patterns[v[4]].shape
+            assert_p_rot = det.pat_rotations[k] == det.pat_rotations[v[4]]
+            if cluster_id == det.clusters[c] and det.patterns[k] is not None and assert_p_shape and assert_p_rot:
+                cur_corr = matchTemplate(patch, det.patterns[k], TM_CCOEFF_NORMED)[0][0]
+            if cur_corr > max_corr:
+                c = k
+                max_corr = cur_corr
+        if max_corr < det.parameters[c][1] * det.trh_corr_mult:
+            continue
+
+        # logging.debug("+ %d, %d corr=%.3f, c=%d" % (v[1], v[0], val_corr, c))
+        # logging.debug("  p of classes: %s", ", ".join("%.2f" % p for p in pp))
+        result.append((i, j, c, p_res))
+        if debug_dir is not None:
+            cv2.imsave(debug_dir + "c%d_%04d_%04d_%.2f_p%.2f_r%d.bmp" %
+                       (det.pat_orig[c], v[1], v[0], val_corr, p_res, det.pat_rotations[c]),
+                       np.rot90(image[i:i + det.patterns[c].shape[0],
+                                j:j + det.patterns[c].shape[1]],
+                                -det.pat_rotations[c]))
+    return result
+
+
 def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=None):
     """
     Main low-level detection function. Mathching and comporations processed here.
@@ -275,42 +315,7 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
     logging.debug("find maximums among %d patches" % len(matches))
     non_overlap = max_rect(matches, mode="mean")
 
-    # clf
-    logging.debug("found %s non-overlapping patches", len(non_overlap))
-    logging.debug("classify")
-    result = []
-    for v in non_overlap:
-        i = v[0] - det.patterns[v[4]].shape[0] // 2
-        j = v[1] - det.patterns[v[4]].shape[1] // 2
-        pp, val_corr = v[6], v[5]
-        p_i = (pp * is_elem_class).argmax()
-        c = det.clf.classes_[p_i]
-        p_res = pp[p_i]
-        patch = im[i:i + det.patterns[v[4]].shape[0], j:j + det.patterns[v[4]].shape[1]]
-        assert patch.shape == det.patterns[v[4]].shape[:2]
-
-        max_corr = 0
-        for k, cluster_id in enumerate(det.clusters):
-            cur_corr = -1.
-            if cluster_id == det.clusters[c] and det.patterns[k] is not None and \
-                    det.patterns[k].shape == det.patterns[v[4]].shape and \
-                    det.pat_rotations[k] == det.pat_rotations[v[4]]:
-                cur_corr = matchTemplate(patch, det.patterns[k], TM_CCOEFF_NORMED)[0][0]
-            if cur_corr > max_corr:
-                c = k
-                max_corr = cur_corr
-        if max_corr < det.parameters[c][1] * det.trh_corr_mult:
-            continue
-
-        # logging.debug("+ %d, %d corr=%.3f, c=%d" % (v[1], v[0], val_corr, c))
-        # logging.debug("  p of classes: %s", ", ".join("%.2f" % p for p in pp))
-        result.append((i, j, c, p_res))
-        if debug_dir is not None:
-            cv2.imsave(debug_dir + "c%d_%04d_%04d_%.2f_p%.2f_r%d.bmp" %
-                       (det.pat_orig[c], v[1], v[0], val_corr, p_res, det.pat_rotations[c]),
-                       np.rot90(image[i:i + det.patterns[c].shape[0],
-                                j:j + det.patterns[c].shape[1]],
-                                -det.pat_rotations[c]))
+    result = _classify(non_overlap, det, is_elem_class, im, debug_dir, image)
 
     logging.info("Result: %d patches", len(result))
     return result

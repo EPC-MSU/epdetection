@@ -236,6 +236,26 @@ def jitter(img, n):
         yield warp(img, r, mode=edge_mode)
 
 
+def _count_classes(clusters, n, y) -> list:
+    classes_count = []
+    for i in range(n):
+        if clusters[i] != i:
+            classes_count.append("%d with %d" % (i, clusters[i]))
+        else:
+            classes_count.append("%d: %d" % (i, y.count(i)))
+    return classes_count
+
+
+def _get_not_in_clust(names) -> set:
+    not_in_clust = set()
+    for i, name in enumerate(names):
+        if os.path.sep not in name:
+            not_in_clust.add(name)
+        else:
+            names[i] = name.replace(os.path.sep, "/")
+    return not_in_clust
+
+
 # sym_mask has 3 bits responsible for horizontal,
 # vertical and diagonal (.T) symmetry
 def load_data(types_filename, extract_hogs_opencv,
@@ -284,12 +304,7 @@ def load_data(types_filename, extract_hogs_opencv,
 
     # join some classes into one
     clusters = np.arange(n)
-    not_in_clust = set()
-    for i, name in enumerate(names):
-        if os.path.sep not in name:
-            not_in_clust.add(name)
-        else:
-            names[i] = name.replace(os.path.sep, "/")
+    not_in_clust = _get_not_in_clust(names)
     if "not elem" in not_in_clust:
         not_in_clust.remove("not elem")
     if os.path.isfile(clusters_file):
@@ -298,14 +313,7 @@ def load_data(types_filename, extract_hogs_opencv,
         clusters[folder_to_idx[name]] = folder_to_idx[name][0]
     for i in range(len(y)):
         y[i] = clusters[y[i]]
-    classes_count = []
-    for i in range(n):
-        # cnt = y.count(i)
-        if clusters[i] != i:
-            classes_count.append("%d with %d" % (i, clusters[i]))
-        else:
-            classes_count.append("%d: %d" % (i, y.count(i)))
-
+    classes_count = _count_classes(clusters, n, y)
     logging.debug("all: %d, %d classes: %s" % (len(y), n, ", ".join(classes_count)))
     logging.debug(f"n_features = {len(x[0])}, resized_shape = {resized_shape}")
     logging.debug("n_classes = %d" % len(set(clusters)))
@@ -375,6 +383,17 @@ def load_data_handle_cluster_file(clusters, clusters_file, folder_to_idx, not_in
                 clusters[folder_to_idx[name]] = num0
 
 
+def _get_modified_img(img, mask):
+    img2 = img
+    if mask & 1:
+        img2 = img2[::-1]
+    if mask & 2:
+        img2 = img2[:, ::-1]
+    if mask & 4:
+        img2 = img2.T
+    return img2
+
+
 def load_data_handle_samples(c, extract_features, fnames, jitter_n, label_folder, parameters, pat, resized_shape,
                              samples, x, y):
     for fimg in os.listdir(label_folder):
@@ -405,13 +424,7 @@ def load_data_handle_samples(c, extract_features, fnames, jitter_n, label_folder
                 logging.debug("Can't transpose not square")
             for mask in range(1, 8):
                 if (parameters[c][0] | mask) == parameters[c][0]:
-                    img2 = img
-                    if mask & 1:
-                        img2 = img2[::-1]
-                    if mask & 2:
-                        img2 = img2[:, ::-1]
-                    if mask & 4:
-                        img2 = img2.T
+                    img2 = _get_modified_img(img, mask)
                     x.append(extract_features(img2, resized_shape))
                     y.append(c)
                     fnames.append(fimg + ".%d" % mask)
