@@ -73,9 +73,9 @@ def detect_elements(img: np.ndarray, gc=None, trh_prob: float = 0.7, trh_corr_mu
     gc : GuiConnector
         GuiConnector or FakeGuiConnector - class for progressbars and signals.
     trh_prob : float
-        Threshold for detection. Uses for probability calculations. Can take values from 0 to 1.
+        Classifier threshold. Elements with a probability below the threshold are rejected. Can take values from 0 to 1.
     trh_corr_mult : float
-        Preliminary detector threshold.
+        Classifier coefficient. Responsible for the threshold for finding elements within non-overlapping hypotheses.
     find_one : bool
         One element to search or many.
     elements_offset : tuple
@@ -84,9 +84,10 @@ def detect_elements(img: np.ndarray, gc=None, trh_prob: float = 0.7, trh_corr_mu
     debug_dir : str
         Debug directory.
     det_names : list
-        List of strings with name needed to detect. Exp: ["SMB", "2-SMD"]. Other types ignored.
+        List of names of elements to recognize or `None`. For example: ["SMB", "2-SMD"]. Other element types are
+        ignored.
     bga_szk : float
-        Size of BGA pins.
+        Something to do with BGA sizes.
 
     Returns
     -------
@@ -136,9 +137,9 @@ def detect_BGA(img: np.ndarray, gc=None, trh_prob: float = 0.7, trh_corr_mult: f
     gc : GuiConnector
         GuiConnector or FakeGuiConnector - class for progressbars and signals.
     trh_prob : float
-        Threshold for detection. Uses for probability calculations. Can take values from 0 to 1.
+        Classifier threshold. Elements with a probability below the threshold are rejected. Can take values from 0 to 1.
     trh_corr_mult : float
-        Preliminary detector threshold.
+        Classifier coefficient. Responsible for the threshold for finding elements within non-overlapping hypotheses.
     find_one : bool
         One element to search or many.
     elements_offset : tuple
@@ -147,9 +148,10 @@ def detect_BGA(img: np.ndarray, gc=None, trh_prob: float = 0.7, trh_corr_mult: f
     debug_dir : str
         Debug directory.
     det_names : list
-        List of strings with name needed to detect. Exp: ["SMB", "2-SMD"]. Other types ignored.
+        List of names of elements to recognize or `None`. For example: ["SMB", "2-SMD"]. Other element types are
+        ignored.
     bga_szk : float
-        Size of BGA pins.
+        Something to do with BGA sizes.
 
     Returns
     -------
@@ -164,7 +166,7 @@ def detect_BGA(img: np.ndarray, gc=None, trh_prob: float = 0.7, trh_corr_mult: f
 
 def detect_BGA_params(img: np.ndarray, gc=None):
     """
-    Detect rotation params of bga image.
+    Detect rotation params of BGA image.
 
     Parameters
     ----------
@@ -177,6 +179,9 @@ def detect_BGA_params(img: np.ndarray, gc=None):
     -------
     tuple : tuple
         Tuple with detected params: angle, pitch, points.
+        angle - the angle in degrees by which the board should be rotated.
+        pitch - used for comparison with BGA standards.
+        points - used for comparison with BGA standards.
     """
 
     pitch_step = 0.05

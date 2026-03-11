@@ -35,6 +35,6 @@ python -m unittest discover tests
 Чтобы сгенерировать документацию, выполните действия:
 
 ```commandline
-python -m pip install pydoc-markdown
-python -m pydoc -w detection
+python -m pip install pdoc3
+python -m pdoc --html detection
 ```
