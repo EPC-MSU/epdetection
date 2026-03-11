@@ -1,13 +1,16 @@
-import os
 import json
 import logging
-
-import numpy as np
+import os
+from shutil import rmtree
+from typing import List, Optional
 import cv2
+import numpy as np
 from cv2 import matchTemplate, TM_CCOEFF_NORMED
-from scipy.signal import correlate2d
 from scipy.fftpack import fft
 from scipy.optimize import minimize_scalar
+from scipy.signal import correlate2d
+from epcore.elements import Element
+
 
 SKEW_TRH = 1.5
 PEAK_FOURIER_TRH = 0.85
@@ -16,13 +19,12 @@ PIX_PER_MM = 23
 
 
 class EmptyEmitter:
+
     def emit(self, *args):
         pass
 
 
 class FakeGuiConnector:
-    def __init__(self):
-        super(FakeGuiConnector, self).__init__()
 
     def check_interruption(self):
         pass
@@ -43,13 +45,13 @@ class FakeGuiConnector:
         pass
 
 
-def remove_temp_dir(debug_dir, find_one):
+def remove_temp_dir(debug_dir: Optional[str], find_one: bool) -> None:
     if debug_dir and not find_one:
-        from shutil import rmtree
         try:
             rmtree("./%s/" % debug_dir)
         except OSError:
-            logging.debug("Can't remove %s." % debug_dir)
+            logging.debug("Can't remove %s", debug_dir)
+
     if debug_dir and not os.path.isdir(debug_dir):
         os.mkdir(debug_dir)
 
@@ -60,7 +62,25 @@ def dump_elements(file_path: str, elements) -> None:
         json.dump(d, dump_file, separators=(",", ":"), indent=2)
 
 
-def save_detect_img(img, elements, path):
+def save_detect_img(img: np.ndarray, elements: List[Element], path: str) -> np.ndarray:
+    """
+    Saves an image with detected elements to a file.
+
+    Parameters
+    ----------
+    img : np.array
+        RGB uint8 array. The image in which the elements were detected.
+    elements : list
+        List of detected elements.
+    path : str
+        Path to the file where you want to save the image.
+
+    Returns
+    -------
+    board : np.narray
+        Image with detected elements.
+    """
+
     board = img
     for el in elements:
         corner_point = tuple(map(int, el.bounding_zone[0]))

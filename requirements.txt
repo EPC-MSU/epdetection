@@ -1,6 +1,6 @@
 numpy==1.18.1
-opencv-python==3.3.0.10
+opencv-python
 scikit-image==0.16.2
 scikit-learn==0.20.1
 scipy==1.5.4
-hg+https://anonymous:anonymous@hg.ximc.ru/eyepoint/epcore#egg=epcore
+git+https://github.com/EPC-MSU/EPCore#egg=epcore

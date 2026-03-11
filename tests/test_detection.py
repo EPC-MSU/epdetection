@@ -1,23 +1,19 @@
-import os
-import sys
 import json
 import logging
+import os
+import sys
 import unittest
-
 import cv2
 import numpy as np
-
-from detection.detect import detect_elements, detect_BGA, detect_label
-from detection.detect import FakeGuiConnector
 from epcore.elements.board import Board
-
-from detection.utils import save_detect_img
+from detection import detect_BGA, detect_elements, detect_label, FakeGuiConnector, save_detect_img
 
 """
-Run under virtual enviroment in top folder (epdetection):
+Run under virtual environment in top folder (epdetection):
 
 python -m unittest discover tests
 """
+
 DRAW_IMAGES = True
 
 logger = logging.getLogger()

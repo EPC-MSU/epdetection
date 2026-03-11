@@ -2,23 +2,22 @@
 detect.py - main file to detection functions.
 See more in doc/readme.md
 """
+
 __author__ = "medvdanil@gmail.com (Daniil Medvedev)"
 __maintainer__ = "a.p.marakulin@gmail.com (Andrey Marakulin)"
 
-import os
 import logging
+import os
 from ast import literal_eval
-
-import numpy as np
+from typing import List, Optional
 import cv2
+import numpy as np
 from cv2 import matchTemplate, TM_CCOEFF_NORMED
-
 from epcore.elements.element import Element
 from epcore.elements.pin import Pin
-from detection.train import extract_hogs_opencv, Detector
-from detection.utils import max_angle_bin, pins_to_array, remove_intersecting, idxrot, rgb2gray, \
-    lqfp_bounding, find_nearest, distance, dist2, peak_k, select_one, fitSizes, \
-    yield_patches, max_rect, pins_right_edge, remove_temp_dir, FakeGuiConnector, PIX_PER_MM
+from . import utils as ut
+from .train import extract_hogs_opencv, Detector
+
 
 TRH_MAX_RECT = 0.25
 TRH_CLOSP = 0.15
@@ -36,19 +35,21 @@ clf_paths = {
               "csv:": os.path.join(os.path.dirname(__file__), "dumps", "label.csv")}}
 
 
-def get_element_names_by_mode(mode: str):
+def get_element_names_by_mode(mode: str) -> List[str]:
     """
     Return list of string names of elements by string mode.
 
     Parameters
     ----------
     mode : str
-        'PCB', 'BGA' or 'label'
+        'PCB', 'BGA' or 'label'.
+
     Returns
     -------
     names : list
-        Names of available elements for specific mode
+        Names of available elements for specific mode.
     """
+
     types_filename = clf_paths[mode]["csv"]
     element_names = []
     with open(types_filename) as types_file:
@@ -59,11 +60,11 @@ def get_element_names_by_mode(mode: str):
     return element_names
 
 
-def detect_elements(gc, img, trh_prob=0.7, trh_corr_mult=1.5,
-                    find_one=False, elements_offset=(0, 0),
-                    debug_dir=None, det_names=None, bga_szk=None):
+def detect_elements(gc, img: np.ndarray, trh_prob: float = 0.7, trh_corr_mult: float = 1.5, find_one: bool = False,
+                    elements_offset=(0, 0), debug_dir: Optional[str] = None, det_names: Optional[List[str]] = None,
+                    bga_szk: Optional[str] = None) -> List[Element]:
     """
-    Detect elements like smd on input image. Use det_names to specified what's to find.
+    Detect elements like SMD on input image. Use det_names to specified what's to find.
 
     Parameters
     ----------
@@ -72,33 +73,33 @@ def detect_elements(gc, img, trh_prob=0.7, trh_corr_mult=1.5,
     img : np.array
         RGB uint8 array. Image for detection.
     trh_prob : float
-        float from 0 to 1. Threshold for detection. Uses for probability calculations.
+        Threshold for detection. Uses for probability calculations. Can take values from 0 to 1.
     trh_corr_mult : float
         Preliminary detector threshold.
     find_one : bool
         One element to search or many.
     elements_offset : tuple
-        (x, y) offset detected image top-left corner from full-image top-left corener. Elements coordinates returned
+        (x, y) offset detected image top-left corner from full-image top-left corner. Elements coordinates returned
         in full-image coordinate system.
     debug_dir : str
         Debug directory.
     det_names : list
-        List of strings with name needed to detect. Exp: ["SMB", "2-SMD"] Other types ignored.
+        List of strings with name needed to detect. Exp: ["SMB", "2-SMD"]. Other types ignored.
     bga_szk : float
-        I don"t shure, probably this size of BGA pins.
+        Size of BGA pins.
 
     Returns
     -------
     elements : list
-        List of detected Elements
+        List of detected elements.
     """
+
     clf_path = clf_paths["PCB"]
-    elements = _detect_all(gc, img, clf_path, trh_prob, trh_corr_mult,
-                           find_one, elements_offset, debug_dir, det_names, bga_szk)
-    return elements
+    return _detect_all(gc, img, clf_path, trh_prob, trh_corr_mult, find_one, elements_offset, debug_dir, det_names,
+                       bga_szk)
 
 
-def detect_label(gc, img):
+def detect_label(gc, img: np.ndarray) -> List[Element]:
     """
     Detect chessboard on image.
 
@@ -108,11 +109,13 @@ def detect_label(gc, img):
         GuiConnector or FakeGuiConnector - class for progressbars and signals.
     img : np.array
         RGB uint8 array. Image for detection.
+
     Returns
     -------
     elements : list
-        List with one label or empty list
+        List with one label or empty list.
     """
+
     clf_path = clf_paths["label"]
     labels = _detect_all(gc, img, clf_path)
     if len(labels) > 1:
@@ -120,11 +123,11 @@ def detect_label(gc, img):
     return labels
 
 
-def detect_BGA(gc, img, trh_prob=0.7, trh_corr_mult=1.5,
-               find_one=False, elements_offset=(0, 0),
-               debug_dir=None, det_names=None, bga_szk=None):
+def detect_BGA(gc, img: np.ndarray, trh_prob: float = 0.7, trh_corr_mult: float = 1.5, find_one: bool = False,
+               elements_offset=(0, 0), debug_dir: Optional[str] = None, det_names: Optional[List[str]] = None,
+               bga_szk: Optional[float] = None) -> List[Element]:
     """
-    Detect BGA elements for input image.
+    Detect BGA elements on input image.
 
     Parameters
     ----------
@@ -133,33 +136,33 @@ def detect_BGA(gc, img, trh_prob=0.7, trh_corr_mult=1.5,
     img : np.array
         RGB uint8 array. Image for detection.
     trh_prob : float
-        float from 0 to 1. Threshold for detection. Uses for probability calculations.
+        Threshold for detection. Uses for probability calculations. Can take values from 0 to 1.
     trh_corr_mult : float
         Preliminary detector threshold.
     find_one : bool
         One element to search or many.
     elements_offset : tuple
-        (x, y) offset detected image top-left corner from full-image top-left corener. Elements coordinates returned
+        (x, y) offset detected image top-left corner from full-image top-left corner. Elements coordinates returned
         in full-image coordinate system.
     debug_dir : str
         Debug directory.
     det_names : list
-        List of strings with name needed to detect. Exp: ["SMB", "2-SMD"] Other types ignored.
+        List of strings with name needed to detect. Exp: ["SMB", "2-SMD"]. Other types ignored.
     bga_szk : float
-        I don"t shure, probably this size of BGA pins.
+        Size of BGA pins.
 
     Returns
     -------
     elements : list
-        List of detected Elements
+        List of detected elements.
     """
+
     clf_path = clf_paths["BGA"]
-    elements = _detect_all(gc, img, clf_path, trh_prob, trh_corr_mult,
-                           find_one, elements_offset, debug_dir, det_names, bga_szk)
-    return elements
+    return _detect_all(gc, img, clf_path, trh_prob, trh_corr_mult, find_one, elements_offset, debug_dir, det_names,
+                       bga_szk)
 
 
-def detect_BGA_params(gc, img):
+def detect_BGA_params(gc, img: np.ndarray):
     """
     Detect rotation params of bga image.
 
@@ -169,19 +172,21 @@ def detect_BGA_params(gc, img):
         GuiConnector or FakeGuiConnector - class for progressbars and signals.
     img : np.array
         RGB uint8 array. Image for detection.
+
     Returns
     -------
     tuple : tuple
-        tuple with detected params: angle, pitch, points
+        Tuple with detected params: angle, pitch, points.
     """
+
     pitch_step = 0.05
     max_pitch = 2.0
     elements = detect_BGA(gc, img)
-    points = pins_to_array(elements)
+    points = ut.pins_to_array(elements)
     if len(points) < 2:
         return 0, 1.0, points
-    vecs = np.zeros((len(points), 2))
 
+    vecs = np.zeros((len(points), 2))
     for i in range(len(points)):
         pt_i = points[i].copy()
         points[i] = np.inf
@@ -189,9 +194,9 @@ def detect_BGA_params(gc, img):
         points[i] = pt_i
         vecs[i] = points[j] - pt_i
 
-    ang, maxv = max_angle_bin(90, vecs)
+    ang, maxv = ut.max_angle_bin(90, vecs)
     hist, ranges = np.histogram(
-        np.sqrt(np.sum(vecs * vecs, axis=1)) / PIX_PER_MM,
+        np.sqrt(np.sum(vecs * vecs, axis=1)) / ut.PIX_PER_MM,
         bins=int(max_pitch / pitch_step + 0.5), range=(pitch_step / 2, max_pitch + pitch_step / 2))
 
     pitch = (np.argmax(hist) + 1) * pitch_step
@@ -199,14 +204,15 @@ def detect_BGA_params(gc, img):
     return ang, pitch, points
 
 
-def _detect_all(gc, img, clf_path, trh_prob=0.7, trh_corr_mult=1.5,
-                find_one=False, elements_offset=(0, 0),
-                debug_dir=None, det_names=None, bga_szk=None):
+def _detect_all(gc, img: np.ndarray, clf_path, trh_prob: float = 0.7, trh_corr_mult: float = 1.5,
+                find_one: bool = False, elements_offset=(0, 0), debug_dir: Optional[str] = None,
+                det_names: Optional[List[str]] = None, bga_szk: Optional[float] = None) -> List[Element]:
     """
-    Main detection function. Used pretrained classifier, loaded from clf_path["dump"]. Prossed search for elements.
+    Main detection function. Uses pretrained classifier loaded from clf_path["dump"].
     """
-    remove_temp_dir(debug_dir, find_one)
-    logging.debug(f"""Loading classifier dump {clf_path["dump"]}""")
+
+    ut.remove_temp_dir(debug_dir, find_one)
+    logging.debug(f"Loading classifier dump {clf_path['dump']}")
     det = Detector()
     det.load_from_file(clf_path["dump"])
     det = _tune_det(det, find_one, bga_szk, trh_corr_mult, trh_prob)
@@ -215,16 +221,17 @@ def _detect_all(gc, img, clf_path, trh_prob=0.7, trh_corr_mult=1.5,
     elements = _detect_common(gc, img, det, debug_dir=None, only_pat_ids=ids)
     elements = _filter_elements(elements, elements_offset, img, find_one, (det.clf is not None))
 
-    logging.debug("Elements found: %d.", len(elements))
+    logging.debug("Elements found: %d", len(elements))
     return elements
 
 
 def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=None):
     """
-    Main low-level detection function. Mathching and comporations processed here.
+    Main low-level detection function. Matching and comparison processed here.
     """
+
     image_rgb = (image * 255).astype(np.uint8)
-    im = rgb2gray(image)
+    im = ut.rgb2gray(image)
     im8 = (im * 255).astype(np.uint8)
     logging.debug("img %s, resized pattern %s", im.shape, det.resized_shape)
     logging.debug("selected patterns: %s", only_pat_ids)
@@ -260,7 +267,7 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
     logging.debug("extract features & calc probabilities")
     probabilities = np.zeros((0, len(det.clf.classes_)), dtype=np.float64)
 
-    for descriptors in extract_hogs_opencv(yield_patches(im, non_overlap_hyp, det), det.resized_shape):
+    for descriptors in extract_hogs_opencv(ut.yield_patches(im, non_overlap_hyp, det), det.resized_shape):
         probabilities = np.vstack((probabilities, det.clf.predict_proba(descriptors)))
         gc.check_interruption()
 
@@ -273,7 +280,7 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
             matches.append(tuple(v) + (pp, p))
 
     logging.debug("find maximums among %d patches" % len(matches))
-    non_overlap = max_rect(matches, mode="mean")
+    non_overlap = ut.max_rect(matches, mode="mean")
 
     # clf
     logging.debug("found %s non-overlapping patches", len(non_overlap))
@@ -317,7 +324,7 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
 
 
 def _detect_without_clf(debug_dir, det, image_rgb, non_overlap_hyp):
-    non_overlap = max_rect(non_overlap_hyp, mode="mean")
+    non_overlap = ut.max_rect(non_overlap_hyp, mode="mean")
     result = []
     for v in non_overlap:
         i = v[0] - det.patterns[v[4]].shape[0] // 2
@@ -353,16 +360,16 @@ def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, no
             continue
         gc.check_interruption()
         trh_corr = det.parameters[pat_i][1] * det.trh_corr_mult
-        pat = (rgb2gray(pat) * 255).astype(np.uint8)
+        pat = (ut.rgb2gray(pat) * 255).astype(np.uint8)
         corr = matchTemplate(im8, pat, TM_CCOEFF_NORMED)
         shape07_half = int(pat.shape[0] * 0.35), int(pat.shape[1] * 0.35)
 
         matches = [(i + pat.shape[0] // 2, j + pat.shape[1] // 2,
                     shape07_half[0], shape07_half[1], pat_i, corr[i, j])
-                   for i, j in peak_k(corr, trh_corr, k=3)]
+                   for i, j in ut.peak_k(corr, trh_corr, k=3)]
 
         logging.info("For pat %d found: %d peaks" % (pat_i, len(matches)))
-        non_overlap_hyp += max_rect(matches, trh=TRH_MAX_RECT)
+        non_overlap_hyp += ut.max_rect(matches, trh=TRH_MAX_RECT)
         # if len(en_patterns) != 0:
         gc.send_next_stage()
     # if len(en_patterns) != 0:
@@ -372,26 +379,26 @@ def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, no
 
 def _closest_peak(p0, img, det, only_pat_id=None, trh_mult=0.7, debug_dir=None):
     """
-    Find patch which closest to p0
-    Returns left top corner or (-1, -1) if not found
+    Find patch which closest to p0.
+    Returns left top corner or (-1, -1) if not found.
     """
+
     pos = (-1, -1)
     prob = 0.
     trh_old = det.trh_corr_mult, det.trh_prob
     det.trh_corr_mult *= trh_mult
     det.trh_prob *= trh_mult
-    for v in _detect(FakeGuiConnector(), img, det, only_pat_ids=[only_pat_id], debug_dir=debug_dir):
+    for v in _detect(ut.FakeGuiConnector(), img, det, only_pat_ids=[only_pat_id], debug_dir=debug_dir):
         if pos[0] == -1 or v[3] > prob + TRH_CLOSP or \
-                dist2((v[0], v[1]), p0) < dist2(pos, p0) and prob - v[3] < TRH_CLOSP:
+                ut.dist2((v[0], v[1]), p0) < ut.dist2(pos, p0) and prob - v[3] < TRH_CLOSP:
             pos = v[0], v[1]
             prob = max(v[3], prob)
     det.trh_corr_mult, det.trh_prob = trh_old
     return pos
 
 
-def _detect_2sides(image, det, i, j, pat_i, pinw, pin_y_offset,
-                   patch_n_pins, edge_pins_n, debug_dir=None):
-    im = rgb2gray(image)
+def _detect_2sides(image, det, i, j, pat_i, pinw, pin_y_offset, patch_n_pins, edge_pins_n, debug_dir=None):
+    im = ut.rgb2gray(image)
     shp = det.patterns[pat_i].shape
 
     offset1 = int(pin_y_offset + 0.5)
@@ -437,19 +444,19 @@ def _detect_2sides(image, det, i, j, pat_i, pinw, pin_y_offset,
 
     corners = np.round(corners).astype(np.int32)
     first_pin_shift = (pinw - pin_y_offset) % pinw
-    p0p1_len = (distance(corners[0], corners[1]) + distance(corners[2], corners[3])) / 2
+    p0p1_len = (ut.distance(corners[0], corners[1]) + ut.distance(corners[2], corners[3])) / 2
     n_pins = (p0p1_len - 2 * shp[0] + 2 * patch_n_pins * pinw - 2 * first_pin_shift) / pinw
-    n_pins = find_nearest(edge_pins_n, n_pins)
+    n_pins = ut.find_nearest(edge_pins_n, n_pins)
 
-    pins_right = pins_right_edge(im, pin_img, pin_y_offset,
-                                 shp, corners[0], corners[1], pinw, n_pins, patch_n_pins=patch_n_pins)
+    pins_right = ut.pins_right_edge(im, pin_img, pin_y_offset,
+                                    shp, corners[0], corners[1], pinw, n_pins, patch_n_pins=patch_n_pins)
     pins_right = [Pin(x=x, y=y) for x, y in pins_right]
 
     p0 = corners[3][0], image.shape[1] - corners[3][1] - 1
     p1 = corners[2][0], image.shape[1] - corners[2][1] - 1
 
-    pins_left_mir = pins_right_edge(im[:, ::-1], pin_img, pin_y_offset,
-                                    shp, p0, p1, pinw, n_pins, patch_n_pins=patch_n_pins)
+    pins_left_mir = ut.pins_right_edge(im[:, ::-1], pin_img, pin_y_offset,
+                                       shp, p0, p1, pinw, n_pins, patch_n_pins=patch_n_pins)
     pins_left_mir = [Pin(x=x, y=y) for x, y in pins_left_mir]
 
     logging.debug("lpins: %d, rpins: %d" % (len(pins_right), len(pins_left_mir)))
@@ -464,24 +471,24 @@ def _detect_2sides(image, det, i, j, pat_i, pinw, pin_y_offset,
 
 
 # i, j - is coordinates of patch in left bottom corner
-def _detect_multipin(image, det, i, j, pat_i, pinw,
-                     pin_y_offset, patch_n_pins, edge_pins_n, debug_dir=None):
+def _detect_multipin(image, det, i, j, pat_i, pinw, pin_y_offset, patch_n_pins, edge_pins_n, debug_dir=None):
     name = det.names[pat_i]
     r = det.pat_rotations[pat_i]
     pat_i = det.pat_orig[pat_i]
     shp = det.patterns[pat_i].shape
-    cr0_offset = idxrot((shp[0] - 1, shp[1] - 1), shp, -r)
-    i, j = idxrot((i + cr0_offset[0], j + cr0_offset[1]), image.shape, r)
+    cr0_offset = ut.idxrot((shp[0] - 1, shp[1] - 1), shp, -r)
+    i, j = ut.idxrot((i + cr0_offset[0], j + cr0_offset[1]), image.shape, r)
     image = np.rot90(image, -r)
     logging.debug("Detect 2 sides:")
     result = _detect_2sides(image, det, i, j, pat_i, pinw, pin_y_offset, patch_n_pins, edge_pins_n, debug_dir=debug_dir)
     logging.debug("result: %s", bool(result))
     if result is None:
         return
+
     corners, pins_bottom, pins_top = result
     # try to detect LQFP
     image_r = np.rot90(image, -1)
-    i, j = idxrot(
+    i, j = ut.idxrot(
         (corners[1][0] - pinw * FICT_PINS_N, corners[1][1] - pinw * FICT_PINS_N - shp[0]), image.shape, 1)
     crop_t = max(int(i - shp[0] / 2 - pinw * FICT_PINS_N_MAX + 0.5), 0)
     crop_b = min(int(i + shp[0] / 2 + pinw * FICT_PINS_N_MAX + 0.5), image_r.shape[0])
@@ -507,19 +514,19 @@ def _detect_multipin(image, det, i, j, pat_i, pinw,
         corners_r = []
         # pins_left, pins_right = pins_top_r, pins_bottom_r
         for p in pins_top_r:
-            x, y = idxrot((p.x, p.y), image_r.shape, -1)
+            x, y = ut.idxrot((p.x, p.y), image_r.shape, -1)
             pins_left.append(Pin(x=x, y=y))
         for p in pins_bottom_r:
-            x, y = idxrot((p.x, p.y), image_r.shape, -1)
+            x, y = ut.idxrot((p.x, p.y), image_r.shape, -1)
             pins_right.append(Pin(x=x, y=y))
         for p in corners_rr:
-            corners_r.append(idxrot(p, image_r.shape, -1))
+            corners_r.append(ut.idxrot(p, image_r.shape, -1))
         # make corners for lqfp
         corners_r = np.array(corners_r[3:] + corners_r[:3])
         corners = np.array(corners)
         dcr = np.abs(corners - corners_r).mean()
         corners = (corners + corners_r) / 2
-        corners = lqfp_bounding(corners, shp[1] - patch_n_pins * pinw - dcr / 2, -0.1 * shp[1])
+        corners = ut.lqfp_bounding(corners, shp[1] - patch_n_pins * pinw - dcr / 2, -0.1 * shp[1])
         name = name.split("&")[0]
     else:
         name = name.split("&")[-1]
@@ -529,10 +536,10 @@ def _detect_multipin(image, det, i, j, pat_i, pinw,
 
     rotated_pins = []
     for p in pins_bottom + pins_left + pins_top + pins_right:
-        y, x = idxrot((p.x, p.y), image.shape, -r)
+        y, x = ut.idxrot((p.x, p.y), image.shape, -r)
         rotated_pins.append(Pin(x=x, y=y))
 
-    rotated_corners = np.array([idxrot(pt, image.shape, -r) for pt in corners])
+    rotated_corners = np.array([ut.idxrot(pt, image.shape, -r) for pt in corners])
     rotated_corners[:, [0, 1]] = rotated_corners[:, [1, 0]]
 
     elem = Element(pins=rotated_pins, set_automatically=True,
@@ -540,7 +547,7 @@ def _detect_multipin(image, det, i, j, pat_i, pinw,
     if r > 0 and w_pins > 0 and h_pins > 0:
         r = 0
         w_pins, h_pins = h_pins, w_pins
-    elem = fitSizes(elem, h_pins, w_pins)
+    elem = ut.fitSizes(elem, h_pins, w_pins)
     return elem
 
 
@@ -560,7 +567,7 @@ def _detect_common(gc, image, det, debug_dir=None, only_pat_ids=None):
             multipin[pat_i] = True
             continue
         for pin in literal_eval(par[2]):
-            x, y = idxrot(pin, 1.0, -det.pat_rotations[pat_i])
+            x, y = ut.idxrot(pin, 1.0, -det.pat_rotations[pat_i])
             pin_lists[-1].append(Pin(x=x, y=y))
 
     for pat_i, pat in enumerate(det.patterns):
@@ -632,14 +639,14 @@ def _detect_common_return_elements(debug_dir, det, elements, gc, image, only_pat
         bz_xy[:, [0, 1]] = bz_xy[:, [1, 0]]
         elem = Element(pins=pins, set_automatically=True,
                        name=det.names[res_i], bounding_zone=bz_xy, rotation=det.pat_rotations[res_i])
-        elem = fitSizes(elem)
+        elem = ut.fitSizes(elem)
         elem.width *= szk_max
         elem.height *= szk_max
         elements.append(elem)
 
 
-def _detect_common_handle_detect(debug_dir, det, edge_pins_n, elements, gc, image,
-                                 only_pat_ids, patch_n_pins, pin_lists, pins_w, pins_y_offset):
+def _detect_common_handle_detect(debug_dir, det, edge_pins_n, elements, gc, image, only_pat_ids, patch_n_pins,
+                                 pin_lists, pins_w, pins_y_offset):
     for i, j, res_i, p in _detect(gc, image, det, find_rotations=True, debug_dir=debug_dir, only_pat_ids=only_pat_ids):
         if det.parameters[res_i][2] == "multipin":
             elem = _detect_multipin(image, det, i, j, res_i,
@@ -660,7 +667,7 @@ def _detect_common_handle_detect(debug_dir, det, edge_pins_n, elements, gc, imag
         bz_xy[:, [0, 1]] = bz_xy[:, [1, 0]]
         elem = Element(pins=pins, set_automatically=True,
                        name=det.names[res_i], bounding_zone=bz_xy, rotation=det.pat_rotations[res_i])
-        elem = fitSizes(elem)
+        elem = ut.fitSizes(elem)
         elements.append(elem)
 
 
@@ -668,6 +675,7 @@ def _tune_det(det, find_one, bga_szk, trh_corr_mult, trh_prob):
     """
     Change detector params after load, replace with settings params
     """
+
     det.bga_szk = bga_szk
     det.trh_prob = trh_prob
     det.trh_corr_mult = trh_corr_mult
@@ -681,7 +689,7 @@ def _filter_elements(elements, elements_offset, img, find_one, by_classifier):
     if len(elements) == 0:
         return []
     if find_one:
-        elements = [elements[select_one(elements, img.shape[:2])]]
+        elements = [elements[ut.select_one(elements, img.shape[:2])]]
     for elem in elements:
         for i in range(len(elem.bounding_zone)):
             elem.bounding_zone[i] += np.array(elements_offset)
@@ -690,7 +698,7 @@ def _filter_elements(elements, elements_offset, img, find_one, by_classifier):
             pin.y += elements_offset[1]
     if by_classifier:
         logging.debug("Removing intersecting elements (total %d)...", len(elements))
-        elements = remove_intersecting(elements)
+        elements = ut.remove_intersecting(elements)
     return elements
 
 
