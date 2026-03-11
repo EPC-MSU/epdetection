@@ -60,7 +60,7 @@ def get_element_names_by_mode(mode: str) -> List[str]:
     return element_names
 
 
-def detect_elements(gc, img: np.ndarray, trh_prob: float = 0.7, trh_corr_mult: float = 1.5, find_one: bool = False,
+def detect_elements(img: np.ndarray, gc=None, trh_prob: float = 0.7, trh_corr_mult: float = 1.5, find_one: bool = False,
                     elements_offset=(0, 0), debug_dir: Optional[str] = None, det_names: Optional[List[str]] = None,
                     bga_szk: Optional[str] = None) -> List[Element]:
     """
@@ -68,10 +68,10 @@ def detect_elements(gc, img: np.ndarray, trh_prob: float = 0.7, trh_corr_mult: f
 
     Parameters
     ----------
-    gc : GuiConnector
-        GuiConnector or FakeGuiConnector - class for progressbars and signals.
     img : np.array
         RGB uint8 array. Image for detection.
+    gc : GuiConnector
+        GuiConnector or FakeGuiConnector - class for progressbars and signals.
     trh_prob : float
         Threshold for detection. Uses for probability calculations. Can take values from 0 to 1.
     trh_corr_mult : float
@@ -95,20 +95,20 @@ def detect_elements(gc, img: np.ndarray, trh_prob: float = 0.7, trh_corr_mult: f
     """
 
     clf_path = clf_paths["PCB"]
-    return _detect_all(gc, img, clf_path, trh_prob, trh_corr_mult, find_one, elements_offset, debug_dir, det_names,
+    return _detect_all(img, clf_path, gc, trh_prob, trh_corr_mult, find_one, elements_offset, debug_dir, det_names,
                        bga_szk)
 
 
-def detect_label(gc, img: np.ndarray) -> List[Element]:
+def detect_label(img: np.ndarray, gc=None) -> List[Element]:
     """
     Detect chessboard on image.
 
     Parameters
     ----------
-    gc : GuiConnector
-        GuiConnector or FakeGuiConnector - class for progressbars and signals.
     img : np.array
         RGB uint8 array. Image for detection.
+    gc : GuiConnector
+        GuiConnector or FakeGuiConnector - class for progressbars and signals.
 
     Returns
     -------
@@ -117,13 +117,13 @@ def detect_label(gc, img: np.ndarray) -> List[Element]:
     """
 
     clf_path = clf_paths["label"]
-    labels = _detect_all(gc, img, clf_path)
+    labels = _detect_all(img, clf_path, gc)
     if len(labels) > 1:
         labels = [labels[0]]
     return labels
 
 
-def detect_BGA(gc, img: np.ndarray, trh_prob: float = 0.7, trh_corr_mult: float = 1.5, find_one: bool = False,
+def detect_BGA(img: np.ndarray, gc=None, trh_prob: float = 0.7, trh_corr_mult: float = 1.5, find_one: bool = False,
                elements_offset=(0, 0), debug_dir: Optional[str] = None, det_names: Optional[List[str]] = None,
                bga_szk: Optional[float] = None) -> List[Element]:
     """
@@ -131,10 +131,10 @@ def detect_BGA(gc, img: np.ndarray, trh_prob: float = 0.7, trh_corr_mult: float 
 
     Parameters
     ----------
-    gc : GuiConnector
-        GuiConnector or FakeGuiConnector - class for progressbars and signals.
     img : np.array
         RGB uint8 array. Image for detection.
+    gc : GuiConnector
+        GuiConnector or FakeGuiConnector - class for progressbars and signals.
     trh_prob : float
         Threshold for detection. Uses for probability calculations. Can take values from 0 to 1.
     trh_corr_mult : float
@@ -158,20 +158,20 @@ def detect_BGA(gc, img: np.ndarray, trh_prob: float = 0.7, trh_corr_mult: float 
     """
 
     clf_path = clf_paths["BGA"]
-    return _detect_all(gc, img, clf_path, trh_prob, trh_corr_mult, find_one, elements_offset, debug_dir, det_names,
+    return _detect_all(img, clf_path, gc, trh_prob, trh_corr_mult, find_one, elements_offset, debug_dir, det_names,
                        bga_szk)
 
 
-def detect_BGA_params(gc, img: np.ndarray):
+def detect_BGA_params(img: np.ndarray, gc=None):
     """
     Detect rotation params of bga image.
 
     Parameters
     ----------
-    gc : GuiConnector
-        GuiConnector or FakeGuiConnector - class for progressbars and signals.
     img : np.array
         RGB uint8 array. Image for detection.
+    gc : GuiConnector
+        GuiConnector or FakeGuiConnector - class for progressbars and signals.
 
     Returns
     -------
@@ -181,7 +181,7 @@ def detect_BGA_params(gc, img: np.ndarray):
 
     pitch_step = 0.05
     max_pitch = 2.0
-    elements = detect_BGA(gc, img)
+    elements = detect_BGA(img, gc)
     points = ut.pins_to_array(elements)
     if len(points) < 2:
         return 0, 1.0, points
@@ -204,7 +204,7 @@ def detect_BGA_params(gc, img: np.ndarray):
     return ang, pitch, points
 
 
-def _detect_all(gc, img: np.ndarray, clf_path, trh_prob: float = 0.7, trh_corr_mult: float = 1.5,
+def _detect_all(img: np.ndarray, clf_path, gc=None, trh_prob: float = 0.7, trh_corr_mult: float = 1.5,
                 find_one: bool = False, elements_offset=(0, 0), debug_dir: Optional[str] = None,
                 det_names: Optional[List[str]] = None, bga_szk: Optional[float] = None) -> List[Element]:
     """
@@ -269,7 +269,8 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
 
     for descriptors in extract_hogs_opencv(ut.yield_patches(im, non_overlap_hyp, det), det.resized_shape):
         probabilities = np.vstack((probabilities, det.clf.predict_proba(descriptors)))
-        gc.check_interruption()
+        if gc:
+            gc.check_interruption()
 
     assert probabilities.shape[0] == len(non_overlap_hyp)
     matches = []
@@ -349,16 +350,23 @@ def _detect_without_clf(debug_dir, det, image_rgb, non_overlap_hyp):
 def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, non_overlap_hyp):
     if len(en_patterns) == 0:
         return []
-    if en_patterns[0][0] != 0:  # Skip detection in BGA mode
+
+    if en_patterns[0][0] != 0 and gc:  # Skip detection in BGA mode
         gc.send_num_stages(len(en_patterns))
+
     for pat_i, pat in en_patterns:
         if pat is None:
             continue
+
         if det.pat_rotations[pat_i] != 0 and not find_rotations:
             continue
+
         if im.shape[0] < pat.shape[0] or im.shape[1] < pat.shape[1]:
             continue
-        gc.check_interruption()
+
+        if gc:
+            gc.check_interruption()
+
         trh_corr = det.parameters[pat_i][1] * det.trh_corr_mult
         pat = (ut.rgb2gray(pat) * 255).astype(np.uint8)
         corr = matchTemplate(im8, pat, TM_CCOEFF_NORMED)
@@ -370,10 +378,15 @@ def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, no
 
         logging.info("For pat %d found: %d peaks" % (pat_i, len(matches)))
         non_overlap_hyp += ut.max_rect(matches, trh=TRH_MAX_RECT)
+
         # if len(en_patterns) != 0:
-        gc.send_next_stage()
+        if gc:
+            gc.send_next_stage()
+
     # if len(en_patterns) != 0:
-    gc.change_progress_type()
+    if gc:
+        gc.change_progress_type()
+
     return non_overlap_hyp
 
 
@@ -388,7 +401,7 @@ def _closest_peak(p0, img, det, only_pat_id=None, trh_mult=0.7, debug_dir=None):
     trh_old = det.trh_corr_mult, det.trh_prob
     det.trh_corr_mult *= trh_mult
     det.trh_prob *= trh_mult
-    for v in _detect(ut.FakeGuiConnector(), img, det, only_pat_ids=[only_pat_id], debug_dir=debug_dir):
+    for v in _detect(None, img, det, only_pat_ids=[only_pat_id], debug_dir=debug_dir):
         if pos[0] == -1 or v[3] > prob + TRH_CLOSP or \
                 ut.dist2((v[0], v[1]), p0) < ut.dist2(pos, p0) and prob - v[3] < TRH_CLOSP:
             pos = v[0], v[1]
@@ -624,6 +637,7 @@ def _detect_common_return_elements(debug_dir, det, elements, gc, image, only_pat
     if hasattr(gc, "BGASizeKSignal"):
         gc.BGASizeKSignal.emit(szk_max)
     logging.debug("elements size: %s, %s, %s", szk_max, maxv, tmp)
+
     det.patterns[0] = orig_pat
     for i, j, res_i, p in sizes_els[maxi]:
         shp = det.patterns[res_i].shape

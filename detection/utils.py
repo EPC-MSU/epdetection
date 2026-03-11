@@ -18,33 +18,6 @@ PINS_X_OFFSET_MULT = 0.56
 PIX_PER_MM = 23
 
 
-class EmptyEmitter:
-
-    def emit(self, *args):
-        pass
-
-
-class FakeGuiConnector:
-
-    def check_interruption(self):
-        pass
-
-    def check_skip(self):
-        pass
-
-    def send_num_stages(self, number):
-        pass
-
-    def send_next_stage(self):
-        pass
-
-    def send_skip_stages(self, decrement):
-        pass
-
-    def change_progress_type(self):
-        pass
-
-
 def remove_temp_dir(debug_dir: Optional[str], find_one: bool) -> None:
     if debug_dir and not find_one:
         try:

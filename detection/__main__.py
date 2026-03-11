@@ -11,7 +11,7 @@ import logging
 import os
 import cv2
 from epcore.elements.board import Board
-from detection import detect_elements, FakeGuiConnector, save_detect_img
+from detection import detect_elements, save_detect_img
 
 
 if __name__ == "__main__":
@@ -29,7 +29,6 @@ if __name__ == "__main__":
         raise Exception("For specify the path to the image, please use arg: --image PATH")
 
     logging.info("Detection running...")
-    gc = FakeGuiConnector()
 
     img = cv2.imread(cliargs.image)
     try:
@@ -41,7 +40,7 @@ if __name__ == "__main__":
     os.makedirs(os.path.join("log", "main"), exist_ok=True)
     cv2.imwrite(os.path.join("log", "main", "in_image.png"), img)
 
-    result = detect_elements(gc, img, trh_corr_mult=cliargs.trh_corr_mult)
+    result = detect_elements(img, trh_corr_mult=cliargs.trh_corr_mult)
 
     logging.info("-" * 40)
     logging.info("Detected elements:")

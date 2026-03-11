@@ -9,14 +9,14 @@
 Требуется Python 3.6.8.
 * Установите зависимости:
   
-  ```bash
+  ```commandline
   python -m pip install --upgrade pip
   python -m pip install -r requirements.txt
   ```
 
 * Запустите пример:
 
-  ```bash
+  ```commandline
   python -m detection --image tests/elm_test1/image.png --draw-elements --save-json-result
   ```
   
@@ -24,8 +24,17 @@
 
 ### Запуск тестов
 
-```bash
+```commandline
 python -m unittest discover tests
 ```
 
 Оценка точности классификатора производится по формуле: (найдено элементов) / (всего на размеченной плате + не верно найденные).
+
+### Генерация документации
+
+Чтобы сгенерировать документацию, выполните действия:
+
+```commandline
+python -m pip install pydoc-markdown
+python -m pydoc -w detection
+```
