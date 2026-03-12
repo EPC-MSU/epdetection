@@ -230,6 +230,18 @@ def _detect_all(img: np.ndarray, clf_path, gc=None, trh_prob: float = 0.7, trh_c
     return elements
 
 
+def _predict_probabilities(gc, im, det, non_overlap_hyp):
+    logging.debug("Extract features & calc probabilities")
+    probabilities = np.zeros((0, len(det.clf.classes_)), dtype=np.float64)
+
+    for descriptors in extract_hogs_opencv(ut.yield_patches(im, non_overlap_hyp, det), det.resized_shape):
+        probabilities = np.vstack((probabilities, det.clf.predict_proba(descriptors)))
+        if gc:
+            gc.check_interruption()
+
+    return probabilities
+
+
 def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=None):
     """
     Main low-level detection function. Matching and comparison processed here.
@@ -238,16 +250,12 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
     image_rgb = (image * 255).astype(np.uint8)
     im = ut.rgb2gray(image)
     im8 = (im * 255).astype(np.uint8)
-    logging.debug("img %s, resized pattern %s", im.shape, det.resized_shape)
-    logging.debug("selected patterns: %s", only_pat_ids)
+    logging.debug("Img %s, resized pattern %s", im.shape, det.resized_shape)
+    logging.debug("Selected patterns: %s", only_pat_ids)
 
     # correlation
     non_overlap_hyp = []
-    if only_pat_ids is None:
-        en_patterns = enumerate(det.patterns)
-    else:
-        en_patterns = [(i, det.patterns[i]) for i in only_pat_ids]
-
+    en_patterns = enumerate(det.patterns) if only_pat_ids is None else [(i, det.patterns[i]) for i in only_pat_ids]
     non_overlap_hyp = _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, non_overlap_hyp)
 
     # 1 class
@@ -266,17 +274,11 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
 
     if debug_dir:
         np.array(non_overlap_hyp).dump("%snon_overlap_hyp.dump" % debug_dir)
-        logging.debug("dump saved to %snon_overlap_hyp.dump", debug_dir)
+        logging.debug("Dump saved to %snon_overlap_hyp.dump", debug_dir)
 
-    logging.debug("extract features & calc probabilities")
-    probabilities = np.zeros((0, len(det.clf.classes_)), dtype=np.float64)
-
-    for descriptors in extract_hogs_opencv(ut.yield_patches(im, non_overlap_hyp, det), det.resized_shape):
-        probabilities = np.vstack((probabilities, det.clf.predict_proba(descriptors)))
-        if gc:
-            gc.check_interruption()
-
+    probabilities = _predict_probabilities(gc, im, det, non_overlap_hyp)
     assert probabilities.shape[0] == len(non_overlap_hyp)
+
     matches = []
     for k, v in enumerate(non_overlap_hyp):
         pp = probabilities[k]
@@ -284,12 +286,12 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
         if p > det.trh_prob:
             matches.append(tuple(v) + (pp, p))
 
-    logging.debug("find maximums among %d patches" % len(matches))
+    logging.debug("Find maximums among %d patches", len(matches))
     non_overlap = ut.max_rect(matches, mode="mean")
 
     # clf
-    logging.debug("found %s non-overlapping patches", len(non_overlap))
-    logging.debug("classify")
+    logging.debug("Found %d non-overlapping patches", len(non_overlap))
+    logging.debug("Classify")
     result = []
     for v in non_overlap:
         i = v[0] - det.patterns[v[4]].shape[0] // 2
