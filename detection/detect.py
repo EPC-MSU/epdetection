@@ -73,7 +73,7 @@ def detect_elements(img: np.ndarray, gc=None, trh_prob: float = 0.7, trh_corr_mu
     img : np.array
         RGB uint8 array. Image for detection.
     gc : GuiConnector
-        GuiConnector or FakeGuiConnector - class for progressbars and signals.
+        Class for progressbars and signals.
     trh_prob : float
         Classifier threshold. Elements with a probability below the threshold are rejected. Can take values from 0 to 1.
     trh_corr_mult : float
@@ -111,7 +111,7 @@ def detect_label(img: np.ndarray, gc=None) -> List[Element]:
     img : np.array
         RGB uint8 array. Image for detection.
     gc : GuiConnector
-        GuiConnector or FakeGuiConnector - class for progressbars and signals.
+        Class for progressbars and signals.
 
     Returns
     -------
@@ -137,7 +137,7 @@ def detect_BGA(img: np.ndarray, gc=None, trh_prob: float = 0.7, trh_corr_mult: f
     img : np.array
         RGB uint8 array. Image for detection.
     gc : GuiConnector
-        GuiConnector or FakeGuiConnector - class for progressbars and signals.
+        Class for progressbars and signals.
     trh_prob : float
         Classifier threshold. Elements with a probability below the threshold are rejected. Can take values from 0 to 1.
     trh_corr_mult : float
@@ -175,7 +175,7 @@ def detect_BGA_params(img: np.ndarray, gc=None):
     img : np.array
         RGB uint8 array. Image for detection.
     gc : GuiConnector
-        GuiConnector or FakeGuiConnector - class for progressbars and signals.
+        Class for progressbars and signals.
 
     Returns
     -------
