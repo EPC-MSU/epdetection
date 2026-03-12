@@ -109,7 +109,7 @@ class ModelInfo:
         schema["description"] = self.description
         schema["createdate"] = {"datetime": self.datetime_to_str(), "date": self.datetime_to_datestr()}
         schema["modelname"] = self.custom_name if self.custom_name is not None \
-            else "model_" + self.datetime_to_modelname() + '.pth'
+            else "model_" + self.datetime_to_modelname() + ".pth"
 
         if self.compatible_det_info_json is None:
             try:
@@ -143,7 +143,7 @@ class ModelInfo:
             name = custom_name if custom_name is not None else schema["modelname"]
             with open(os.path.join(patch, name + ".json"), "w") as f:
                 json.dump(schema, f, indent=4)
-                print('Info saved in: ', os.path.join(patch, name + ".json"))
+                print("Info saved in: ", os.path.join(patch, name + ".json"))
 
 
 if __name__ == "__main__":
