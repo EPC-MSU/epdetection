@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 
 setup(name="epdetection",
-      version="1.0.9",
+      version="1.0.10",
       description="PCB components detection module",
       url="https://github.com/EPC-MSU/epdetection",
       author="EPC MSU",
