@@ -1,7 +1,7 @@
 [flake8]
 max-complexity = 14
 inline-quotes = double
-multiline-quotes = """
+multiline-quotes = """ 
 builtins = _
 verbose = 2
 max-line-length = 120
@@ -10,7 +10,7 @@ max-line-length = 120
 # -----------------------------
 # Add comments for all ignored files and folders to justify the common standard violation
 exclude = 
-          # Git internal folder`
+          # Git internal folder
           .git,
           # Python temporary files
           __pycache__,

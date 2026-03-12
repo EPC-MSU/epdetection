@@ -1,19 +1,23 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
 
-setup(name='epdetection',
-      version='1.5.0',  # 1.5.x reserved for neural networks
-      description='PCB components detection module for EyePoint P10.',
-      long_description=long_description,
-      long_description_content_type="text/markdown",
-      url='https://github.com/EPC-MSU/epdetection',
-      author='EPC MSU',
-      author_email='a.p.marakulin@gmail.com',
-      license='CC0-1.0',
-      packages=['detection'],
-      install_requires=[],
+setup(name="epdetection",
+      version="1.5.0",  # 1.5.x reserved for neural networks
+      description="PCB components detection module",
+      url="https://github.com/EPC-MSU/epdetection",
+      author="EPC MSU",
+      author_email="a.p.marakulin@gmail.com",
+      license="CC0-1.0",
+      packages=find_packages(),
+      python_requires="~=3.6.0",
+      install_requires=[
+          "numpy==1.18.1",
+          "opencv-python",
+          "scikit-image==0.16.2",
+          "scikit-learn==0.20.1",
+          "scipy==1.5.4",
+          # "epcore @ git+https://github.com/EPC-MSU/epcore#egg=epcore",
+      ],
       package_data={"detection": ["dumps/*"]},
       include_package_data=True,
       classifiers=[
@@ -21,5 +25,4 @@ setup(name='epdetection',
             "License :: OSI Approved :: CC0 License",
             "Operating System :: OS Independent",
       ],
-      python_requires='>=3.6',
       zip_safe=False)

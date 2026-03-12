@@ -1,34 +1,41 @@
 # epdetection
 
-Модуль для распознавания компонентов на платах. Содержание модуля смотрите в `doc/readme.md`
+Модуль для распознавания компонентов на платах.
 
-### Установить этот модуль в venv:
+Краткая инструкция по установке и запуску модуля `detection`. Описание содержания модуля смотрите в [doc/readme.md](./doc/readme.md).
 
-* Версия питона **строго** 3.6.8 (для совместимости с основным проектом)
-* Нажать на `requirements_to_venv.bat` (создастся виртуальное окружение)
-* Активировать виртуальное окружение **cmd**:`venv\Scripts\activate`
-* Установить модуль **cmd**:```python setup.py install```
+Для работы модуля **требуется Python 3.6.8**.
 
-### Проверить работоспособность (из под venv в корне):
+### Запуск примера
 
-```bash
-python -m detection --image tests//elm_test1/image.png --draw-elements --save-json-result
-```
-Модуль возьмёт изображение image.png, распознает на нём элементы PCB, выведет их в консоль, а так же создаст папку log в которую положит распознанную картинку и файл с элементами.
+* Установите зависимости:
+  
+  ```commandline
+  python -m pip install --upgrade pip
+  python -m pip install -r requirements.txt
+  ```
 
-### Добавить модуль в requirements.txt вашего проекта
-```bash
-# В этом случае скачается репозиторий.
--e git+https://github.com/EPC-MSU/epdetection@main#egg=epdetection
-# В этом случае установится в site-packages
-git+https://github.com/EPC-MSU/epdetection@main#egg=epdetection
+* Запустите пример:
 
-# Если нужна конкретная версия epdetection, замените main на V.V.V
-```
+  ```commandline
+  python -m detection --image tests/elm_test1/image.png --draw-elements --save-json-result
+  ```
+  
+  Модуль возьмет изображение `image.png`, распознает на нем элементы PCB, выведет их в консоль, а так же создаст папку `log`, в которую положит распознанную картинку и файл с элементами.
 
-### Запустить тесты (из под venv в корне):
+### Запуск тестов
 
-```bash
+```commandline
 python -m unittest discover tests
 ```
-Оценка точности классификатора производится по формуле: найдено элементов/(всего на размеченной плате + не верно найденные)
+
+Оценка точности классификатора производится по формуле: (найдено элементов) / (всего на размеченной плате + не верно найденные).
+
+### Генерация документации
+
+Чтобы сгенерировать документацию, выполните действия:
+
+```commandline
+python -m pip install pdoc3
+python -m pdoc --html detection
+```

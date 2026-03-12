@@ -1,21 +1,20 @@
 import os
 import logging
 import time
-from random import random
-from itertools import islice
+from csv import reader as csv_reader
 from datetime import datetime
-
+from itertools import islice
+from random import random
 import numpy as np
-from cv2 import imread, matchTemplate, TM_CCOEFF_NORMED
-from cv2 import HOGDescriptor, resize, INTER_AREA
+from cv2 import HOGDescriptor, INTER_AREA, imread, matchTemplate, resize, TM_CCOEFF_NORMED
+from scipy.signal import convolve2d
+from skimage import __version__ as skimage_version
 from skimage.color import rgb2gray
 from skimage.transform import AffineTransform, warp
-from skimage import __version__ as skimage_version
-from sklearn.externals import joblib
 from sklearn import base
+from sklearn.externals import joblib
 from sklearn.linear_model import SGDClassifier
-from scipy.signal import convolve2d
-from csv import reader as csv_reader
+
 
 """
 def draw_rect(img, center, shape, color=[255, 0, 0]):

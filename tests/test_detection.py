@@ -1,23 +1,19 @@
-import os
-import sys
 import json
 import logging
+import os
+import sys
 import unittest
-
 import cv2
 import numpy as np
-
-from detection.detect import detect_elements, detect_BGA, detect_label
-from detection.detect import FakeGuiConnector
 from epcore.elements.board import Board
-
-from detection.utils import save_detect_img
+from detection import detect_BGA, detect_elements, detect_label, save_detect_img
 
 """
-Run under virtual enviroment in top folder (epdetection):
+Run under virtual environment in top folder (epdetection):
 
 python -m unittest discover tests
 """
+
 DRAW_IMAGES = True
 
 logger = logging.getLogger()
@@ -69,7 +65,7 @@ class DetectTests(unittest.TestCase):
 
     def test_elements_1(self, folder_name="elm_test1"):
         img, trueres = load_test_data(folder_name)
-        result = detect_elements(FakeGuiConnector(), img)
+        result = detect_elements(img)
         if DRAW_IMAGES:
             save_detect_img(img.copy(), result, os.path.join("log", "tests", folder_name, "detected.png"))
         tp, fp, total = compare_elements(result, trueres)
@@ -79,7 +75,7 @@ class DetectTests(unittest.TestCase):
 
     def test_elements_2(self, folder_name="elm_test2"):
         img, trueres = load_test_data(folder_name)
-        result = detect_elements(FakeGuiConnector(), img)
+        result = detect_elements(img)
         if DRAW_IMAGES:
             save_detect_img(img.copy(), result, os.path.join("log", "tests", folder_name, "detected.png"))
         tp, fp, total = compare_elements(result, trueres)
@@ -89,7 +85,7 @@ class DetectTests(unittest.TestCase):
 
     def test_elements_3(self, folder_name="elm_test3"):
         img, trueres = load_test_data(folder_name)
-        result = detect_elements(FakeGuiConnector(), img)
+        result = detect_elements(img)
         if DRAW_IMAGES:
             save_detect_img(img.copy(), result, os.path.join("log", "tests", folder_name, "detected.png"))
         tp, fp, total = compare_elements(result, trueres)
@@ -99,7 +95,7 @@ class DetectTests(unittest.TestCase):
 
     def test_bga_1(self, folder_name="bga_test1"):
         img, trueres = load_test_data(folder_name)
-        result = detect_BGA(FakeGuiConnector(), img)
+        result = detect_BGA(img)
         if DRAW_IMAGES:
             save_detect_img(img.copy(), result, os.path.join("log", "tests", folder_name, "detected.png"))
         tp, fp, total = compare_elements(result, trueres, thd_in_pixels=10)
@@ -109,7 +105,7 @@ class DetectTests(unittest.TestCase):
 
     def test_calibration_1(self, folder_name="calibration_test1"):
         img, trueres = load_test_data(folder_name)
-        result = detect_label(FakeGuiConnector(), img)
+        result = detect_label(img)
         if DRAW_IMAGES:
             save_detect_img(img.copy(), result, os.path.join("log", "tests", folder_name, "detected.png"))
         tp, fp, total = compare_elements(result, trueres)
