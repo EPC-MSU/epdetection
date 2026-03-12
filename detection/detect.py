@@ -802,7 +802,7 @@ def _detect_by_nn(gc, image, det, find_rotations=False, only_pat_ids=None, debug
 
     # Load models info
     # try:
-    model_path = os.path.join("detection", "dumps")
+    model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dumps")
     schema_path = None
     for file in os.listdir(model_path):
         print(file)
