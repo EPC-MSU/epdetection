@@ -12,6 +12,8 @@ __all__ = ["detect_BGA", "detect_BGA_params", "detect_elements", "detect_label",
 # To make pdoc generate documentation only for public functions
 __pdoc__ = {
     "detect": False,
+    "detect_nn": False,
     "train": False,
-    "utils": False
+    "utils": False,
+    "utilities": False
 }
