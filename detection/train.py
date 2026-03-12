@@ -5,6 +5,7 @@ from csv import reader as csv_reader
 from datetime import datetime
 from itertools import islice
 from random import random
+from typing import List
 import numpy as np
 from cv2 import HOGDescriptor, INTER_AREA, imread, matchTemplate, resize, TM_CCOEFF_NORMED
 from scipy.signal import convolve2d
@@ -235,11 +236,19 @@ def jitter(img, n):
         yield warp(img, r, mode=edge_mode)
 
 
+def _get_cluster_names(clusters_file: str, only_cluster) -> List[str]:
+    f = open(clusters_file, "r")
+    for line in f:
+        spl = line.split(":")
+        if len(spl) == 2 and spl[0] == only_cluster:
+            return [field.strip() for field in spl[1].split(",")]
+
+    raise ValueError("Cluster {} not found in {}".format(only_cluster, clusters_file))
+
+
 # sym_mask has 3 bits responsible for horizontal,
 # vertical and diagonal (.T) symmetry
-def load_data(types_filename, extract_hogs_opencv,
-              resized_shape=None, jitter_n=3,
-              only_cluster=None, filenames=False):
+def load_data(types_filename, extract_hogs_opencv, resized_shape=None, jitter_n=3, only_cluster=None, filenames=False):
     x = []
     y = []
     # x0_sym = []
@@ -253,19 +262,12 @@ def load_data(types_filename, extract_hogs_opencv,
     clusters_file = os.path.join(train_folder, "clusters.txt")
 
     def extract_features(image, resized_shape):
-        return next(extract_hogs_opencv([resize(image, resized_shape[1::-1])],
-                                        resized_shape))[0]
+        return next(extract_hogs_opencv([resize(image, resized_shape[1::-1])], resized_shape))[0]
 
     only_cluster_names = None
     if only_cluster is not None:
-        f = open(clusters_file, "r")
-        for line in f:
-            spl = line.split(":")
-            if len(spl) == 2 and spl[0] == only_cluster:
-                only_cluster_names = [field.strip() for field in spl[1].split(",")]
-                break
-        if only_cluster_names is None:
-            raise ValueError("cluster %s not found in %s" % (only_cluster, clusters_file))
+        only_cluster_names = _get_cluster_names(clusters_file, only_cluster)
+
     load_data_names_from_file(folder_to_idx, names, only_cluster, only_cluster_names, parameters, train_folder,
                               types_filename)
 
@@ -276,10 +278,8 @@ def load_data(types_filename, extract_hogs_opencv,
         samples = 0
         pat, resized_shape, samples = load_data_handle_samples(c, extract_features, fnames, jitter_n, label_folder,
                                                                parameters, pat, resized_shape, samples, x, y)
-        if pat is None:
-            patterns.append(None)
-        else:
-            patterns.append((pat / samples).astype(np.float32))
+        pattern = None if pat is None else (pat / samples).astype(np.float32)
+        patterns.append(pattern)
 
     # join some classes into one
     clusters = np.arange(n)
@@ -326,6 +326,7 @@ def load_data(types_filename, extract_hogs_opencv,
     det.pat_orig = list(range(len(patterns) + 1)) if pat_orig is None else pat_orig
     if filenames:
         return np.array(x, dtype=np.float32), np.array(y, dtype=np.int16), det, fnames
+
     return np.array(x, dtype=np.float32), np.array(y, dtype=np.int16), det
 
 
@@ -374,57 +375,72 @@ def load_data_handle_cluster_file(clusters, clusters_file, folder_to_idx, not_in
                 clusters[folder_to_idx[name]] = num0
 
 
+def _load_data_handle_sample_from_file_image(file_image, c, extract_features, fnames, jitter_n, parameters, pat,
+                                             resized_shape, samples, x, y):
+    img = rgb2gray(imread(file_image)).astype(np.float32)
+    if resized_shape is None:
+        resized_shape = img.shape
+
+    if parameters[c][1] < 1.0:
+        if pat is None:
+            pat = img.copy()
+        else:
+            pat += img
+    samples += 1
+    x.append(extract_features(img, resized_shape))
+    y.append(c)
+    fnames.append(file_image)
+    for jimg in jitter(img, jitter_n):
+        x.append(extract_features(jimg, resized_shape))
+        y.append(c)
+        fnames.append(file_image + ".j")
+
+    if pat is None:
+        return
+
+    if (parameters[c][0] & 4) and img.shape[0] != img.shape[1]:
+        parameters[c][0] &= 3
+        logging.debug("Can't transpose not square")
+
+    for mask in range(1, 8):
+        if (parameters[c][0] | mask) == parameters[c][0]:
+            img2 = img
+            if mask & 1:
+                img2 = img2[::-1]
+            if mask & 2:
+                img2 = img2[:, ::-1]
+            if mask & 4:
+                img2 = img2.T
+            x.append(extract_features(img2, resized_shape))
+            y.append(c)
+            fnames.append(file_image + ".%d" % mask)
+            for jimg in jitter(img, jitter_n):
+                x.append(extract_features(jimg, resized_shape))
+                y.append(c)
+                fnames.append(file_image + ".j")
+            pat += img2
+            samples += 1
+
+    return pat, resized_shape, samples
+
+
 def load_data_handle_samples(c, extract_features, fnames, jitter_n, label_folder, parameters, pat, resized_shape,
                              samples, x, y):
     for fimg in os.listdir(label_folder):
         try:
-            fimg = os.path.join(label_folder, fimg)
-            img = rgb2gray(imread(fimg)).astype(np.float32)
-            if resized_shape is None:
-                resized_shape = img.shape
-
-            if parameters[c][1] < 1.0:
-                if pat is None:
-                    pat = img.copy()
-                else:
-                    pat += img
-            samples += 1
-            x.append(extract_features(img, resized_shape))
-            y.append(c)
-            fnames.append(fimg)
-            for jimg in jitter(img, jitter_n):
-                x.append(extract_features(jimg, resized_shape))
-                y.append(c)
-                fnames.append(fimg + ".j")
-
-            if pat is None:
+            file_image = os.path.join(label_folder, fimg)
+            result = _load_data_handle_sample_from_file_image(
+                file_image, c, extract_features, fnames, jitter_n, parameters, pat, resized_shape, samples, x, y)
+            if result is None:
                 continue
-            if (parameters[c][0] & 4) and img.shape[0] != img.shape[1]:
-                parameters[c][0] &= 3
-                logging.debug("Can't transpose not square")
-            for mask in range(1, 8):
-                if (parameters[c][0] | mask) == parameters[c][0]:
-                    img2 = img
-                    if mask & 1:
-                        img2 = img2[::-1]
-                    if mask & 2:
-                        img2 = img2[:, ::-1]
-                    if mask & 4:
-                        img2 = img2.T
-                    x.append(extract_features(img2, resized_shape))
-                    y.append(c)
-                    fnames.append(fimg + ".%d" % mask)
-                    for jimg in jitter(img, jitter_n):
-                        x.append(extract_features(jimg, resized_shape))
-                        y.append(c)
-                        fnames.append(fimg + ".j")
-                    pat += img2
-                    samples += 1
+
+            pat, resized_shape, samples = result
         except OSError:
             pass
         except ValueError as msg:
             logging.debug(fimg + ": " + str(msg))
             raise
+
     return pat, resized_shape, samples
 
 
