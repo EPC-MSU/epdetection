@@ -254,14 +254,13 @@ def _detect(gc, image, det, find_rotations=False, only_pat_ids=None, debug_dir=N
     if det.clf is None:
         return _detect_without_clf(debug_dir, det, image_rgb, non_overlap_hyp)
 
-    is_elem_class = np.array([0.0 if det.patterns[pat_i] is None else 1.0
-                              for pat_i in det.clf.classes_])
+    is_elem_class = np.array([0.0 if det.patterns[pat_i] is None else 1.0 for pat_i in det.clf.classes_])
     pat_to_class = [0] * len(det.patterns)
     for k, cluster_id in enumerate(det.clusters):
         pat_to_class[k] = np.where(det.clf.classes_ == cluster_id)[0][0]
 
     # max_rect
-    logging.info("Founded: %d hypothesis", len(non_overlap_hyp))
+    logging.info("Found: %d hypotheses", len(non_overlap_hyp))
     if len(non_overlap_hyp) == 0:
         return []
 
@@ -381,7 +380,7 @@ def _detect_handle_en_patterns(gc, det, en_patterns, find_rotations, im, im8, no
                     shape07_half[0], shape07_half[1], pat_i, corr[i, j])
                    for i, j in ut.peak_k(corr, trh_corr, k=3)]
 
-        logging.info("For pat %d found: %d peaks" % (pat_i, len(matches)))
+        logging.info("For pattern %d found: %d peaks", pat_i, len(matches))
         non_overlap_hyp += ut.max_rect(matches, trh=TRH_MAX_RECT)
 
         # if len(en_patterns) != 0:
@@ -639,8 +638,8 @@ def _detect_common_return_elements(debug_dir, det, elements, gc, image, only_pat
             maxi = i
 
     det.bga_szk = szk_max
-    if hasattr(gc, "BGASizeKSignal"):
-        gc.BGASizeKSignal.emit(szk_max)
+    if hasattr(gc, "bga_size_k_signal"):
+        gc.bga_size_k_signal.emit(szk_max)
     logging.debug("elements size: %s, %s, %s", szk_max, maxv, tmp)
 
     det.patterns[0] = orig_pat
