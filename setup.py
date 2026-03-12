@@ -9,7 +9,7 @@ setup(name="epdetection",
       author_email="a.p.marakulin@gmail.com",
       license="CC0-1.0",
       packages=find_packages(),
-      python_requires="==3.6",
+      python_requires="~=3.6.0",
       install_requires=[
           "numpy==1.18.1",
           "opencv-python",
