@@ -39,3 +39,11 @@ python -m unittest discover tests
 python -m pip install pdoc3
 python -m pdoc --html detection
 ```
+
+### Визуализатор компонентов
+
+Визуализатор рисует компоненты и пины для заданного классификатора. Чтобы запустить визуализатор, выполните команду:
+
+```commandline
+python tools\visualizer.py путь_до_dump_файла_классификатора путь_до_папки_куда_сохранить_изображения
+```
