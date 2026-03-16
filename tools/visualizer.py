@@ -33,7 +33,7 @@ def draw_pins(i: int, detector: Detector) -> None:
         x_pins.append(x)
         y_pins.append(y)
 
-    plt.scatter(y_pins, x_pins, color="red", s=10, marker="o")
+    plt.scatter(x_pins, y_pins, color="red", s=10, marker="o")
 
 
 def visualize_pcb_components(dump_file: str, output_dir: str) -> None:
@@ -55,7 +55,7 @@ def visualize_pcb_components(dump_file: str, output_dir: str) -> None:
         if pattern is None:
             continue
 
-        plt.imshow(pattern)
+        plt.imshow(pattern.T, origin="lower")
         plt.axis("off")
         name = f"{detector.names[i]} (rot={detector.pat_rotations[i]})"
         plt.title(name)
