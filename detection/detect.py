@@ -29,7 +29,7 @@ FICT_PINS_N_MAX = 5
 PIN_IN_PATTERN = 0.35
 
 clf_paths = {
-    "PCB": {"dump": os.path.join(os.path.dirname(__file__), "dumps", "clf_types.dump"),
+    "PCB": {"dump": os.path.join(os.path.dirname(__file__), "dumps", "clf_types_2.dump"),
             "csv": os.path.join(os.path.dirname(__file__), "dumps", "types.csv")},
     "BGA": {"dump": os.path.join(os.path.dirname(__file__), "dumps", "clf_bga.dump"),
             "csv": os.path.join(os.path.dirname(__file__), "dumps", "bga.csv")},
