@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 
 setup(name="epdetection",
-      version="1.5.0",  # 1.5.x reserved for neural networks
+      version="1.5.1",  # 1.5.x reserved for neural networks
       description="PCB components detection module",
       url="https://github.com/EPC-MSU/epdetection",
       author="EPC MSU",
